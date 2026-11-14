@@ -1824,7 +1824,7 @@ el("ctwebm").addEventListener("click",function(){
   if(!CT.frames.length){ el("ctvstat").textContent="сначала соберите кадры"; return; }
   var st=el("ctvstat"), btn=this;
   btn.disabled=true; st.textContent="пишу видео…";
-  recordFrames(CT.frames.map(function(f){ return f.url; }),1.5,1024,576,function(t,total){
+  recordFrames(CT.frames.map(function(f){ return f.url; }),2.2,1024,576,function(t,total){
     st.textContent="пишу видео… "+Math.round(t)+" из "+Math.round(total)+" с";
   }).then(function(blob){
     var url=URL.createObjectURL(blob);
