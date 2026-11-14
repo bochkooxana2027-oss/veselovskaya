@@ -163,6 +163,26 @@ footer a:hover{color:var(--teal)}
   .tabs{flex-wrap:wrap;overflow:visible;gap:6px;padding-bottom:10px}
   .tabs button{font-size:12.5px;padding:7px 12px}
 }
+/* ======================= звук и речь ======================= */
+.panel h3.sh{font-size:13.5px;margin:18px 0 4px;color:var(--txt);font-weight:700}
+.panel h3.sh:first-of-type{margin-top:12px}
+label.rng{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--dim)}
+label.rng .val{color:#c9d3e6;font-weight:600}
+label.rng input[type=range]{width:100%;accent-color:#a78bfa;margin:0;background:none;border:0;padding:0}
+.sfgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 10px}
+.sfgrid button{font:inherit;font-size:13px;padding:11px 8px;border-radius:10px;border:1px solid var(--line);
+  background:#121722;color:var(--txt);cursor:pointer;transition:.15s}
+.sfgrid button:hover{border-color:#3a4a68;background:#161d2b}
+.sfgrid button.act{border-color:var(--violet);box-shadow:0 0 0 2px rgba(167,139,250,.18)}
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer}
+.chk input{width:16px;height:16px;accent-color:#a78bfa;margin:0}
+@media(max-width:420px){.sfgrid{grid-template-columns:1fr 1fr}}
+form.composer #micBtn{flex:0 0 auto;min-height:50px;padding:0 14px;border-radius:13px;border:1px solid var(--line);
+  background:var(--card);color:var(--dim);font:inherit;font-size:13px;cursor:pointer}
+form.composer #micBtn:hover{color:var(--txt);border-color:#3a4a68}
+form.composer #micBtn.rec{color:#0b0d12;background:var(--teal);border-color:transparent;font-weight:700}
+@media(max-width:520px){form.composer #micBtn{padding:0 10px;font-size:12px}}
+.saynote{font-size:12px;color:#6f7a91;margin:6px 0 0;line-height:1.5}
 </style>
 
 <link rel="canonical" href="https://bochkooxana2027-oss.github.io/veselovskaya/app/">
@@ -179,7 +199,7 @@ footer a:hover{color:var(--teal)}
 <main><div class="wrap">
   <h1>Напишите запрос <span>или выберите инструмент</span></h1>
   <p class="sub">Спросите что угодно: письмо, объяснение, перевод, код, идеи. Расчёты — кредит, проценты, единицы,
-     даты — считаю точно и сразу. Рисую картинки, собираю мультфильмы из кадров, делаю дизайн и страницы сайтов.
+     даты — считаю точно и сразу. Рисую картинки, собираю мультфильмы из кадров, делаю дизайн и страницы сайтов, читаю тексты вслух и синтезирую звук.
      Бесплатная модель уже включена: ключ не нужен.</p>
 
   <div class="tabs" id="tabs" role="tablist" aria-label="Инструменты">
@@ -188,6 +208,7 @@ footer a:hover{color:var(--teal)}
     <button type="button" data-tab="design">Дизайн</button>
     <button type="button" data-tab="site">Сайт</button>
     <button type="button" data-tab="video">Видео</button>
+    <button type="button" data-tab="sound">Звук</button>
   </div>
 
   <div class="panel on" id="p-img">
@@ -319,6 +340,85 @@ footer a:hover{color:var(--teal)}
     <div class="prow" id="vdctrl" style="display:none"><button class="btn" type="button" id="vddl">скачать видео</button></div>
   </div>
 
+
+  <div class="panel" id="p-sound">
+    <h2>Звук и речь</h2>
+    <p class="pnote">Речь читает голос, который уже есть в браузере: текст никуда не уходит, ключ не нужен.
+      Звуки и музыкальная фраза синтезируются на устройстве — результат можно сохранить файлом WAV.</p>
+
+    <h3 class="sh">Прочитать текст вслух</h3>
+    <textarea id="spText" placeholder="Вставьте текст — прочитаю его вслух: пост, письмо, статью"></textarea>
+    <select id="spVoice" aria-label="Голос" style="margin-bottom:10px">
+      <option value="">голос по умолчанию</option>
+    </select>
+    <div class="pgrid">
+      <label class="rng" for="spRate">Скорость <span class="val" id="spRateV">1,0×</span>
+        <input type="range" id="spRate" min="0.6" max="1.8" step="0.1" value="1"></label>
+      <label class="rng" for="spPitch">Тон <span class="val" id="spPitchV">1,0</span>
+        <input type="range" id="spPitch" min="0.5" max="1.6" step="0.1" value="1"></label>
+    </div>
+    <div class="prow">
+      <button class="btn primary" type="button" id="spSay">Сказать</button>
+      <button class="btn" type="button" id="spStop">Стоп</button>
+      <label class="chk"><input type="checkbox" id="spAuto"> читать ответы вслух</label>
+      <label class="chk"><input type="checkbox" id="sfNotify"> звук при ответе</label>
+    </div>
+    <p class="pstat" id="spStat">Голос системы: без сети, без ключа. Файл с речью скачать нельзя — это голос браузера.</p>
+
+    <h3 class="sh">Короткие звуки</h3>
+    <p class="pnote">Сигналы для уведомлений и кнопок. Нажмите, чтобы услышать, — громкость ниже.</p>
+    <div class="sfgrid" id="sfGrid">
+      <button type="button" data-sf="notify">уведомление</button>
+      <button type="button" data-sf="ok">успех</button>
+      <button type="button" data-sf="err">ошибка</button>
+      <button type="button" data-sf="click">клик</button>
+      <button type="button" data-sf="whoosh">вжух</button>
+      <button type="button" data-sf="bell">колокольчик</button>
+    </div>
+    <div class="pgrid">
+      <label class="rng" for="sfVol">Громкость сигналов <span class="val" id="sfVolV">60%</span>
+        <input type="range" id="sfVol" min="0" max="1" step="0.05" value="0.6"></label>
+    </div>
+    <p class="pstat" id="sfStat"></p>
+
+    <h3 class="sh">Мелодия и подложка</h3>
+    <p class="pnote">Это не «нейросеть-композитор», а честный синтез на устройстве: вы задаёте лад, темп и тембр,
+      каждый раз получается новая фраза. Годится для заставки, подкаста или фона к видео.</p>
+    <div class="pgrid">
+      <select id="muScale" aria-label="Лад">
+        <option value="major">мажор — светлый</option>
+        <option value="minor">минор — спокойный</option>
+        <option value="penta">пентатоника — мягкий</option>
+        <option value="dorian">дорийский — задумчивый</option>
+        <option value="blues">блюзовая — тёплый</option>
+      </select>
+      <select id="muWave" aria-label="Тембр">
+        <option value="sine">синус — мягко</option>
+        <option value="triangle">треугольник — ясно</option>
+        <option value="sawtooth">пила — ярко</option>
+        <option value="square">квадрат — ретро</option>
+      </select>
+    </div>
+    <div class="pgrid">
+      <label class="rng" for="muBpm">Темп <span class="val" id="muBpmV">96</span>
+        <input type="range" id="muBpm" min="60" max="160" step="4" value="96"></label>
+      <label class="rng" for="muLen">Длина <span class="val" id="muLenV">12 с</span>
+        <input type="range" id="muLen" min="4" max="30" step="2" value="12"></label>
+    </div>
+    <div class="prow">
+      <button class="btn primary" type="button" id="muGo">Слушать</button>
+      <button class="btn" type="button" id="muStop">Стоп</button>
+      <button class="btn" type="button" id="muDl">скачать WAV</button>
+    </div>
+    <p class="pstat" id="muStat"></p>
+
+    <h3 class="sh">Говорить вместо печати</h3>
+    <p class="pnote">Кнопка «голос» у поля ввода: скажите запрос — текст появится в поле, останется проверить
+      и отправить. Работает в Chrome и Edge, нужен доступ к микрофону.</p>
+    <div class="prow"><button class="btn" type="button" id="micBtn2">сказать запрос</button>
+      <span class="pstat" id="micStat"></span></div>
+  </div>
+
   <div id="chat" aria-live="polite"></div>
 
   <div class="chips" id="chips"></div>
@@ -326,12 +426,14 @@ footer a:hover{color:var(--teal)}
   <form class="composer" id="form">
     <label class="sr" for="q">Задача</label>
     <textarea id="q" rows="1" placeholder="Напишите здесь: «ипотека 3 млн на 15 лет под 12%», «напиши письмо клиенту»…" autocomplete="off" aria-label="Ваш запрос"></textarea>
+    <button class="btn" id="micBtn" type="button" title="Надиктовать запрос голосом" aria-label="Надиктовать запрос голосом">голос</button>
     <button class="btn primary" id="send" type="submit">Отправить</button>
   </form>
   <div class="hint">
     <span>Enter — отправить, Shift+Enter — новая строка</span>
     <span>История хранится только в этом браузере</span>
     <span>Картинка — примерно раз в 45 секунд</span>
+    <span>Голос и звуки — на вашем устройстве</span>
     <button class="btn sm" id="clear" type="button">очистить историю</button>
   </div>
 </div></main>
@@ -1214,7 +1316,7 @@ refreshModelBtn();
 if(!hist.length){
   bubble("bot",
     '<p><b>Здравствуйте. Пишите обычным текстом — как в любом чате.</b></p>'
-    +"<ul><li><b>Инструменты сверху:</b> картинка, мультфильм, дизайн, сайт, видео из кадров.</li>"
+    +"<ul><li><b>Инструменты сверху:</b> картинка, мультфильм, дизайн, сайт, видео из кадров, звук и речь.</li>"
     +"<li>Любые вопросы и просьбы: письмо, объяснение, перевод, код, план, идеи.</li>"
     +"<li>Расчёты — кредит, проценты, скидки, НДС, единицы, даты — считаю точно и мгновенно.</li>"
     +"<li>Контент-план таблицей с CSV, раскадровка, промпт для картинки.</li></ul>"
@@ -1227,7 +1329,7 @@ if(!hist.length){
 "use strict";
 (function(){
 function el(id){ return document.getElementById(id); }
-var TABS=["img","cartoon","design","site","video"];
+var TABS=["img","cartoon","design","site","video","sound"];
 
 function openTab(id){
   if(TABS.indexOf(id)<0) return;
@@ -1717,9 +1819,416 @@ window.VStudio={open:openTab,image:runImage,cartoon:runCartoon,design:runDesign,
 </script>
 
 <script>
+
+/* =================== звук и речь: синтез голоса, сигналы, мелодия =================== */
+"use strict";
+(function(){
+function el(id){ return document.getElementById(id); }
+function note(msg,cls){ var s=el("spStat"); if(s){ s.textContent=msg; s.className="pstat"+(cls?" "+cls:""); } }
+
+var KEY="veselovskaya-sound-v1";
+var S={auto:false,notify:false,rate:1,pitch:1,vol:0.6};
+try{ var raw=localStorage.getItem(KEY); if(raw){ var o=JSON.parse(raw); for(var k in o) if(k in S) S[k]=o[k]; } }catch(e){}
+function saveS(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+
+/* ---------- голос системы ---------- */
+var SYN = (typeof window!=="undefined" && window.speechSynthesis) ? window.speechSynthesis : null;
+var token=0;
+
+function voices(){
+  if(!SYN || !SYN.getVoices) return [];
+  var v=SYN.getVoices()||[];
+  return v.slice().sort(function(a,b){
+    var ar=/^ru/i.test(a.lang)?0:1, br=/^ru/i.test(b.lang)?0:1;
+    if(ar!==br) return ar-br;
+    return (a.name||"").localeCompare(b.name||"");
+  });
+}
+function fillVoices(){
+  var sel=el("spVoice"); if(!sel) return;
+  var v=voices(), cur=sel.value;
+  sel.innerHTML='<option value="">голос по умолчанию</option>';
+  v.forEach(function(x,i){
+    var op=document.createElement("option");
+    op.value=x.voiceURI||x.name; op.textContent=(x.name||"голос "+(i+1))+(x.lang?" · "+x.lang:"");
+    sel.appendChild(op);
+  });
+  if(cur) sel.value=cur;
+  else{
+    for(var i=0;i<v.length;i++){ if(/^ru/i.test(v[i].lang)){ sel.value=v[i].voiceURI||v[i].name; break; } }
+  }
+}
+if(SYN && SYN.addEventListener) SYN.addEventListener("voiceschanged",fillVoices);
+
+function pickVoice(){
+  var sel=el("spVoice"), want=sel?sel.value:"";
+  var v=voices();
+  if(want){ for(var i=0;i<v.length;i++) if((v[i].voiceURI||v[i].name)===want) return v[i]; }
+  for(var j=0;j<v.length;j++) if(/^ru/i.test(v[j].lang)) return v[j];
+  return v[0]||null;
+}
+function cleanText(t){
+  return String(t||"")
+    .replace(/```[\s\S]*?```/g," ")
+    .replace(/https?:\/\/\S+/gi," ссылка ")
+    .replace(/[*_`#>|]+/g," ")
+    .replace(/\[(.*?)\]\([^)]*\)/g,"$1")
+    .replace(/\s+/g," ").trim();
+}
+function chunk(text,max){
+  var parts=text.match(/[^.!?…;:]+[.!?…;:]*\s*/g)||[text], out=[], cur="";
+  parts.forEach(function(p){
+    if((cur+p).length>max){ if(cur) out.push(cur.trim()); cur=p; }
+    else cur+=p;
+  });
+  if(cur.trim()) out.push(cur.trim());
+  return out;
+}
+function speak(text,where){
+  var src = typeof text==="string" ? text : (where?where.innerText:"");
+  var t=cleanText(src);
+  if(!t){ note("Нечего читать: вставьте текст."); return; }
+  if(!SYN){ note("В этом браузере нет синтеза речи. Откройте приложение в Chrome, Edge или Safari.","err"); return; }
+  if(!voices().length){
+    note("В этом браузере не установлен ни один голос. В Chrome и Edge на компьютере и телефоне голоса есть сразу; "
+      +"на Linux нужен речевой движок (например, espeak-ng). Текст при этом можно читать глазами — остальное работает.","err");
+    return;
+  }
+  var seq=chunk(t,220), my=++token, sel=pickVoice();
+  SYN.cancel();
+  seq.forEach(function(part,i){
+    var u=new SpeechSynthesisUtterance(part);
+    if(sel){ u.voice=sel; u.lang=sel.lang||"ru-RU"; } else { u.lang="ru-RU"; }
+    u.rate=Math.max(0.5,Math.min(2,+S.rate||1));
+    u.pitch=Math.max(0,Math.min(2,+S.pitch||1));
+    u.volume=1;
+    if(i===0) u.onstart=function(){ if(my===token) note("Читаю… Скорость "+String(S.rate).replace(".",",")+"×, голос: "+(sel?sel.name:"системный")); };
+    if(i===seq.length-1) u.onend=function(){ if(my===token) note("Дочитала. Голос системы — файл не создаётся.","ok"); };
+    u.onerror=function(e){
+      if(my!==token) return;
+      var map={"not-allowed":"Браузер ждёт нажатия: включите звук и нажмите ещё раз.",
+        "synthesis-failed":"Голосовой движок системы не отвечает — попробуйте другой голос в списке.",
+        "audio-busy":"Звук занят другим приложением: закройте его и повторите.",
+        "interrupted":"Чтение прервано."};
+      var msg=map[e&&e.error]||("Не удалось произнести: "+(e&&e.error?e.error:"ошибка")+".");
+      note(msg,"err");
+    };
+    SYN.speak(u);
+  });
+}
+function stopSpeak(){ if(SYN){ token++; SYN.cancel(); note("Остановила."); } }
+
+/* ---------- звуки ---------- */
+var AC=null, MU=null;
+function ac(){
+  if(!AC){
+    var C=window.AudioContext||window.webkitAudioContext;
+    if(!C) return null;
+    try{ AC=new C(); }catch(e){ return null; }
+  }
+  if(AC.state==="suspended") AC.resume();
+  return AC;
+}
+function tone(ctx,dest,when,freq,dur,type,peak,attack){
+  var o=ctx.createOscillator(), g=ctx.createGain();
+  o.type=type||"sine"; o.frequency.setValueAtTime(freq,when);
+  var pk=peak==null?0.4:peak, a=attack==null?0.008:attack;
+  g.gain.setValueAtTime(0.0001,when);
+  g.gain.linearRampToValueAtTime(pk,when+a);
+  g.gain.exponentialRampToValueAtTime(0.0001,when+dur);
+  o.connect(g); g.connect(dest); o.start(when); o.stop(when+dur+0.03);
+  return o;
+}
+function noise(ctx,dest,when,dur,vol,f0,f1,q){
+  var n=Math.max(1,Math.floor(ctx.sampleRate*dur)), buf=ctx.createBuffer(1,n,ctx.sampleRate), d=buf.getChannelData(0);
+  for(var i=0;i<n;i++) d[i]=Math.random()*2-1;
+  var src=ctx.createBufferSource(); src.buffer=buf;
+  var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.Q.value=q||1;
+  bp.frequency.setValueAtTime(Math.max(60,f0),when);
+  bp.frequency.exponentialRampToValueAtTime(Math.max(60,f1),when+dur);
+  var g=ctx.createGain(); g.gain.setValueAtTime(vol,when);
+  g.gain.exponentialRampToValueAtTime(0.0001,when+dur);
+  src.connect(bp); bp.connect(g); g.connect(dest); src.start(when); src.stop(when+dur);
+}
+var SFX={
+  notify:function(ctx,d,t){ tone(ctx,d,t,880,.12,"sine",.3); tone(ctx,d,t+.14,1320,.16,"sine",.26); },
+  ok:function(ctx,d,t){ [523.25,659.25,783.99].forEach(function(f,i){ tone(ctx,d,t+i*.09,f,.28,"triangle",.28); }); },
+  err:function(ctx,d,t){ tone(ctx,d,t,233,.2,"sawtooth",.18); tone(ctx,d,t+.18,174.6,.3,"sawtooth",.16); },
+  click:function(ctx,d,t){ noise(ctx,d,t,.05,.5,1400,420,1.4); },
+  whoosh:function(ctx,d,t){ noise(ctx,d,t,.55,.42,2600,240,.8); },
+  bell:function(ctx,d,t){ [1046.5,1046.5*2.76,1046.5*5.4].forEach(function(f,i){ tone(ctx,d,t,f,1.4-i*.35,"sine",[.26,.1,.05][i],.004); }); }
+};
+function playSfx(name){
+  var ctx=ac(); if(!ctx) return false;
+  var g=ctx.createGain(); g.gain.value=Math.max(0,Math.min(1,S.vol)); g.connect(ctx.destination);
+  (SFX[name]||SFX.notify)(ctx,g,ctx.currentTime+0.01);
+  return true;
+}
+
+/* ---------- мелодия ---------- */
+var SCALES={
+  major:[0,2,4,5,7,9,11], minor:[0,2,3,5,7,8,10], penta:[0,2,4,7,9],
+  dorian:[0,2,3,5,7,9,10], blues:[0,3,5,6,7,10]
+};
+function buildMelody(secs,bpm,scaleName,wave){
+  var sr=44100, sc=SCALES[scaleName]||SCALES.major;
+  var ctx=new OfflineAudioContext(1,Math.ceil(sr*secs),sr);
+  var master=ctx.createGain(); master.gain.value=0.9;
+  var lp=ctx.createBiquadFilter(); lp.type="lowpass";
+  lp.frequency.setValueAtTime(4200,0); lp.Q.value=0.6;
+  var dl=ctx.createDelay(0.6); dl.delayTime.value=0.27;
+  var fb=ctx.createGain(); fb.gain.value=0.26;
+  var wet=ctx.createGain(); wet.gain.value=0.22;
+  lp.connect(master);
+  lp.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(master);
+
+  var root=[196,220,246.94,174.61][Math.floor(Math.random()*4)];
+  var beat=60/bpm, step=beat/2;
+  var steps=Math.floor(secs/step);
+  for(var i=0;i<steps;i++){
+    var t=i*step;
+    if(t>secs-0.3) break;
+    var bar=Math.floor(t/(beat*4));
+    var deg=sc[Math.floor(Math.random()*sc.length)];
+    var oct=Math.random()<0.28?12:(Math.random()<0.12?-12:0);
+    var f=root*Math.pow(2,(deg+oct)/12)*(Math.random()<0.25?2:1);
+    var strong=(i%4===0);
+    if(Math.random()<(strong?0.9:0.62)){
+      tone(ctx,lp,t,f,step*(strong?1.8:1.1),wave,strong?0.2:0.13,0.012);
+      if(strong) tone(ctx,lp,t,f*2,step*1.2,"sine",0.05,0.02);
+    }
+    if(i%(8)===0){
+      tone(ctx,lp,t,root*0.5,beat*2.6,"sine",0.22,0.06);
+      var chord=[0,Math.floor(sc.length/3),Math.floor(2*sc.length/3)];
+      chord.forEach(function(ci,k){
+        var cf=root*Math.pow(2,sc[ci]/12)*2;
+        var o=ctx.createOscillator(), g=ctx.createGain();
+        o.type="triangle"; o.frequency.value=cf*(k===1?1.003:1);
+        g.gain.setValueAtTime(0.0001,t);
+        g.gain.linearRampToValueAtTime(0.085,t+0.9);
+        g.gain.linearRampToValueAtTime(0.0001,t+beat*3.6);
+        o.connect(g); g.connect(lp); o.start(t); o.stop(t+beat*3.7);
+      });
+    }
+  }
+  var mg=ctx.createGain();
+  mg.gain.setValueAtTime(0.0001,0);
+  mg.gain.linearRampToValueAtTime(1,0.5);
+  mg.gain.setValueAtTime(1,Math.max(0.6,secs-1.4));
+  mg.gain.linearRampToValueAtTime(0.0001,secs);
+  mg.connect(ctx.destination);
+  master.connect(mg);
+  return ctx.startRendering().then(function(buf){
+    // плавное затухание уже задано отдельным узлом — переносим его на мастер
+    return buf;
+  });
+}
+function normalize(buf,target){
+  var peak=0, chs=[];
+  for(var c=0;c<buf.numberOfChannels;c++){
+    var d=buf.getChannelData(c); chs.push(d);
+    for(var i=0;i<d.length;i++){ var a=d[i]<0?-d[i]:d[i]; if(a>peak) peak=a; }
+  }
+  if(!peak) return buf;
+  var k=(target||0.9)/peak;
+  chs.forEach(function(d){ for(var i=0;i<d.length;i++) d[i]*=k; });
+  return buf;
+}
+function encodeWav(buf){
+  var ch=buf.numberOfChannels, len=buf.length, sr=buf.sampleRate;
+  var chans=[];
+  for(var c=0;c<ch;c++) chans.push(buf.getChannelData(c));
+  var bytes=44+len*ch*2, ab=new ArrayBuffer(bytes), v=new DataView(ab);
+  function str(off,s){ for(var i=0;i<s.length;i++) v.setUint8(off+i,s.charCodeAt(i)); }
+  str(0,"RIFF"); v.setUint32(4,bytes-8,true); str(8,"WAVE"); str(12,"fmt ");
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,ch,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*ch*2,true); v.setUint16(32,ch*2,true);
+  v.setUint16(34,16,true); str(36,"data"); v.setUint32(40,len*ch*2,true);
+  var off=44;
+  for(var i=0;i<len;i++) for(var c2=0;c2<ch;c2++){
+    var s=Math.max(-1,Math.min(1,chans[c2][i]));
+    v.setInt16(off,s<0?s*0x8000:s*0x7fff,true); off+=2;
+  }
+  return new Blob([v],{type:"audio/wav"});
+}
+function melodyParams(){
+  return {
+    secs:+el("muLen").value||12,
+    bpm:+el("muBpm").value||96,
+    scale:el("muScale").value||"major",
+    wave:el("muWave").value||"sine"
+  };
+}
+function melodyStat(txt,cls){ var s=el("muStat"); s.textContent=txt; s.className="pstat"+(cls?" "+cls:""); }
+function renderMelody(){
+  var p=melodyParams();
+  melodyStat("Собираю: "+p.secs+" с, темп "+p.bpm+"…");
+  return buildMelody(p.secs,p.bpm,p.scale,p.wave).then(function(buf){
+    normalize(buf,0.92);
+    var blob=encodeWav(buf);
+    MU={blob:blob,buf:buf};
+    melodyStat("Готово · "+p.secs+" с · "+(blob.size/1024/1024).toFixed(1)+" МБ WAV · "+Math.round(p.bpm)+" BPM, "+
+      el("muScale").options[el("muScale").selectedIndex].text);
+    return MU;
+  }).catch(function(e){
+    melodyStat("Не получилось собрать: "+(e&&e.message?e.message:e),"err");
+    return null;
+  });
+}
+function playMelody(){
+  if(!MU){ renderMelody().then(function(m){ if(m) playMelody(); }); return; }
+  stopMelody();
+  var ctx=ac(); if(!ctx) return;
+  var src=ctx.createBufferSource(); src.buffer=MU.buf;
+  var g=ctx.createGain(); g.gain.value=Math.max(0,Math.min(1,S.vol*1.15));
+  src.connect(g); g.connect(ctx.destination); src.start();
+  MU.node=src;
+  src.onended=function(){ if(MU) MU.node=null; };
+}
+function stopMelody(){ if(MU && MU.node){ try{ MU.node.stop(); }catch(e){} MU.node=null; } }
+
+/* ---------- диктовка ---------- */
+var REC=window.SpeechRecognition||window.webkitSpeechRecognition||null, rec=null, recOn=false;
+function dictNote(txt,cls){ var s=el("micStat"); if(s){ s.textContent=txt; s.className="pstat"+(cls?" "+cls:""); } }
+function startDict(){
+  if(!REC){ dictNote("В этом браузере нет распознавания речи. Работает в Chrome и Edge на компьютере и Android.","err"); return; }
+  if(recOn){ stopDict(); return; }
+  dictNote("Запрашиваю доступ к микрофону…");
+  var q=el("q"), r=new REC();
+  r.lang="ru-RU"; r.interimResults=true; r.continuous=false; r.maxAlternatives=1;
+  var base=q.value?q.value.replace(/\s+$/," "):"";
+  r.onstart=function(){ recOn=true; setMic(true); dictNote("Слушаю… говорите."); };
+  r.onresult=function(ev){
+    var txt="";
+    for(var i=ev.resultIndex;i<ev.results.length;i++) txt+=ev.results[i][0].transcript;
+    q.value=base+txt; q.dispatchEvent(new Event("input"));
+  };
+  r.onerror=function(ev){
+    var MSG={
+      "not-allowed":"Нет доступа к микрофону: разрешите его в настройках браузера.",
+      "service-not-allowed":"Браузер запретил распознавание речи.",
+      "no-speech":"Не расслышала — попробуйте ещё раз.",
+      "network":"Распознавание требует сети: проверьте подключение.",
+      "aborted":"Остановила запись."
+    };
+    var m=MSG[ev.error]||("Ошибка распознавания: "+ev.error);
+    dictNote(m, ev.error==="aborted"?"":"err");
+  };
+  r.onend=function(){ recOn=false; setMic(false); rec=null; if(!el("micStat").textContent||/Слушаю/.test(el("micStat").textContent)) dictNote("Готово. Проверьте текст в поле."); };
+  try{ r.start(); rec=r; }catch(e){ dictNote("Не удалось включить микрофон: "+e.message,"err"); setMic(false); recOn=false; }
+}
+function stopDict(){ if(rec){ try{ rec.stop(); }catch(e){} } recOn=false; setMic(false); }
+function setMic(on){
+  [el("micBtn"),el("micBtn2")].forEach(function(b){
+    if(!b) return;
+    b.classList.toggle("rec",!!on);
+    if(b.id==="micBtn") b.textContent=on?"идёт запись":"голос";
+    else b.textContent=on?"остановить запись":"сказать запрос";
+  });
+}
+
+/* ---------- подключение к интерфейсу ---------- */
+function syncUI(){
+  el("spRate").value=S.rate; el("spPitch").value=S.pitch; el("sfVol").value=S.vol;
+  el("spAuto").checked=!!S.auto; el("sfNotify").checked=!!S.notify;
+  el("spRateV").textContent=String(S.rate).replace(".",",")+"×";
+  el("spPitchV").textContent=String(S.pitch).replace(".",",");
+  el("sfVolV").textContent=Math.round(S.vol*100)+"%";
+}
+el("spRate").addEventListener("input",function(){ S.rate=+this.value; syncUI(); saveS(); });
+el("spPitch").addEventListener("input",function(){ S.pitch=+this.value; syncUI(); saveS(); });
+el("sfVol").addEventListener("input",function(){ S.vol=+this.value; syncUI(); saveS(); playSfx("click"); });
+el("spAuto").addEventListener("change",function(){ S.auto=this.checked; saveS();
+  note(S.auto?"Буду читать каждый ответ вслух.":"Больше не читаю ответы сама — только по кнопке «прослушать»."); });
+el("sfNotify").addEventListener("change",function(){ S.notify=this.checked; saveS();
+  if(S.notify) playSfx("notify"); });
+el("spSay").addEventListener("click",function(){ speak(el("spText").value); });
+el("spStop").addEventListener("click",function(){ stopSpeak(); stopMelody(); });
+el("sfGrid").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-sf]"); if(!b) return;
+  var name=b.getAttribute("data-sf");
+  var ok=playSfx(name);
+  el("sfStat").textContent=ok?("Сигнал «"+b.textContent+"» · "+Math.round(S.vol*100)+"% громкости"):"Браузер не разрешил звук — нажмите ещё раз.";
+  b.classList.add("act"); setTimeout(function(){ b.classList.remove("act"); },220);
+});
+el("muBpm").addEventListener("input",function(){ el("muBpmV").textContent=this.value; });
+el("muLen").addEventListener("input",function(){ el("muLenV").textContent=this.value+" с"; });
+["muScale","muWave","muBpm","muLen"].forEach(function(id){
+  el(id).addEventListener("change",function(){ MU=null; melodyStat("Параметры изменились — соберу заново при запуске."); });
+});
+el("muGo").addEventListener("click",playMelody);
+el("muStop").addEventListener("click",function(){ stopMelody(); melodyStat("Остановила."); });
+el("muDl").addEventListener("click",function(){
+  if(!MU){ melodyStat("Сначала соберу мелодию…"); renderMelody().then(function(m){ if(m) el("muDl").click(); }); return; }
+  var a=document.createElement("a"); a.href=URL.createObjectURL(MU.blob);
+  a.download="melodiya-"+new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")+".wav";
+  document.body.appendChild(a); a.click(); setTimeout(function(){ a.remove(); },900);
+  melodyStat("Файл сохранён: "+a.download);
+});
+[el("micBtn"),el("micBtn2")].forEach(function(b){
+  if(b) b.addEventListener("click",function(e){ e.preventDefault(); startDict(); });
+});
+
+/* кнопка «прослушать» в каждом ответе + авточтение + сигнал */
+var origBubble=window.bubble;
+if(typeof origBubble==="function"){
+  window.bubble=function(who,html,meta){
+    var d=origBubble(who,html,meta);
+    if(who!=="bot") return d;
+    var b=d.querySelector(".bub"); if(!b) return d;
+    var tmp=document.createElement("div");
+    tmp.innerHTML=String(html).replace(/<\/(p|div|li|tr|h\d)>/gi,"\n").replace(/<br\s*\/?>/gi,"\n");
+    var txt=(tmp.textContent||"").replace(/\n{3,}/g,"\n\n").trim();
+    var row=b.querySelector(".meta")||document.createElement("div");
+    if(!row.parentNode){ row.className="meta"; b.appendChild(row); }
+    var sp=document.createElement("button");
+    sp.type="button"; sp.className="btn sm"; sp.textContent="прослушать";
+    sp.onclick=function(){
+      if(SYN && SYN.speaking){ stopSpeak(); return; }
+      speak(txt);
+    };
+    row.appendChild(sp);
+    if(S.auto && txt) setTimeout(function(){ speak(txt); },260);
+    if(S.notify) playSfx("notify");
+    return d;
+  };
+}
+
+/* маршрутизация из чата */
+if(window.VStudio && typeof VStudio.tryRoute==="function"){
+  var base=VStudio.tryRoute;
+  VStudio.tryRoute=function(t){
+    if(base(t)) return true;
+    var m=/^(озвучь|прочитай вслух|произнеси|скажи вслух)\s+([\s\S]+)$/i.exec(String(t||"").trim());
+    if(m){ VStudio.open("sound"); el("spText").value=m[2]; speak(m[2]); return true; }
+    if(/^(включи|проиграй)\s+(звук|сигнал)/i.test(String(t||"").trim())){
+      VStudio.open("sound"); playSfx("notify"); el("sfStat").textContent="Сигнал «уведомление» — можно поменять громкость ниже."; return true;
+    }
+    if(/^(собери|сделай)\s+мелодию/i.test(String(t||"").trim())){
+      VStudio.open("sound"); playMelody(); return true;
+    }
+    return false;
+  };
+}
+
+/* состояние */
+syncUI();
+fillVoices();
+if(SYN && SYN.getVoices && !SYN.getVoices().length) setTimeout(fillVoices,900);
+el("spText").value=el("spText").value||"";
+
+if(SYN && SYN.getVoices){
+  var vid=setInterval(function(){ if(voices().length){ fillVoices(); clearInterval(vid); } },1200);
+  setTimeout(function(){ clearInterval(vid); },15000);
+}
+window.VSound={speak:speak,stop:stopSpeak,sfx:playSfx,melody:renderMelody,play:playMelody};
+})();
+</script>
+
+<script>
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load",function(){
-    navigator.serviceWorker.register("sw.js?v=4").catch(function(){});
+    navigator.serviceWorker.register("sw.js?v=5").catch(function(){});
   });
 }
 </script>
