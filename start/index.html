@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Веселовская 2.2 — скачать и установить</title>
+<meta name="description" content="Скачать ассистента «Веселовская»: комплект с установщиком для Windows, macOS и Linux или один файл .pyz без установки.">
+<meta name="theme-color" content="#0e1015">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+  :root{
+    --bg:#0b0d12; --panel:#12161f; --panel2:#171d29; --line:#232a38;
+    --text:#e9edf5; --muted:#9aa5b6; --dim:#6b7688;
+    --accent:#a78bfa; --accent2:#5eead4; --grad:linear-gradient(135deg,#a78bfa,#5eead4);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
+    -webkit-text-size-adjust:100%}
+  a{color:var(--accent2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:760px;margin:0 auto;padding:36px 20px 64px}
+  .kicker{font-size:12.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+  h1{font-size:clamp(27px,4.8vw,40px);line-height:1.16;margin:0 0 12px;letter-spacing:-.02em}
+  h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lead{color:var(--muted);font-size:17px;margin:0 0 8px}
+  h2{font-size:19px;margin:34px 0 12px;letter-spacing:-.01em}
+  h2 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent2);
+    margin-right:10px;vertical-align:middle}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 18px 20px}
+  .btns{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 4px}
+  .btns.stack{flex-direction:column}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    min-height:52px;padding:14px 22px;border-radius:14px;font-size:15.5px;font-weight:650;
+    border:1px solid var(--line);background:var(--panel2);color:var(--text);
+    cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+    transition:transform .12s ease,border-color .12s ease,filter .12s ease}
+  .btn:hover{text-decoration:none;transform:translateY(-1px);border-color:#3d4759}
+  .btn:active{transform:translateY(0) scale(.995)}
+  .btn:focus-visible{outline:3px solid var(--accent2);outline-offset:3px}
+  .btn.primary{background:var(--grad);color:#0b0d12;border-color:transparent;box-shadow:0 10px 26px -14px rgba(167,139,250,.9)}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn .arw{font-size:13px;opacity:.7;transition:transform .12s ease}
+  .btn:hover .arw{transform:translateX(2px)}
+  .btn small{font-weight:500;opacity:.72;font-size:13px}
+  p{margin:0 0 10px}
+  .muted{color:var(--muted);font-size:14.5px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;
+    background:#0d1118;border:1px solid var(--line);border-radius:8px;padding:2px 6px}
+  ol{padding-left:20px;margin:0 0 10px;color:var(--muted)}
+  ol li{margin-bottom:7px}
+  .hint{font-size:13.4px;color:var(--dim);margin-top:10px}
+  footer{margin-top:38px;border-top:1px solid var(--line);padding-top:16px;
+    color:var(--dim);font-size:13.4px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  footer .r{margin-left:auto}
+  @media (max-width:440px){
+    .wrap{padding:26px 16px 52px}
+    .btn{width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">Веселовская 2.2</div>
+  <h1>Скачать и <em>установить</em></h1>
+  <p class="lead">Один архив или один файл. Без регистрации, без обязательных ключей:
+  расчёты, планы и лендинги работают сразу, офлайн.</p>
+
+  <h2><span class="dot"></span>Скачать</h2>
+  <div class="card">
+    <div class="btns stack">
+      <a class="btn primary" href="../veselovskaya-2.2-kit.zip" download>
+        Скачать комплект <small>· 81 КБ, Windows / macOS / Linux</small>
+      </a>
+      <a class="btn" href="../veselovskaya-2.2.pyz" download>
+        Только один файл <small>· 63 КБ, без установки</small>
+      </a>
+      <a class="btn" href="../files/">Все файлы по отдельности <span class="arw">→</span></a>
+      <a class="btn" href="../files/%D0%A3%D0%A1%D0%A2%D0%90%D0%9D%D0%9E%D0%92%D0%9A%D0%90.md">Инструкция по установке <span class="arw">→</span></a>
+    </div>
+    <p class="hint">Комплект: <code>start-windows.bat</code>, <code>start-macos.command</code>,
+      <code>start-linux.sh</code>, <code>veselovskaya.pyz</code>, памятка и README.</p>
+  </div>
+
+  <h2><span class="dot"></span>Установка в два шага</h2>
+  <div class="card">
+    <ol>
+      <li>Распакуйте архив в любую папку.</li>
+      <li>Запустите файл под свою систему: <code>start-windows.bat</code> (двойной клик),
+        <code>start-macos.command</code> (двойной клик) или
+        <code>bash start-linux.sh</code>.</li>
+    </ol>
+    <p class="muted">Скрипт сам найдёт Python, соберёт окружение, поставит зависимости
+      и откроет браузер на <code>http://127.0.0.1:8000</code> — это и есть ассистент.
+      Окно консоли закрывать нельзя, в нём он работает.</p>
+    <p class="hint">Linux/macOS: если «нет прав на запуск» — выполните
+      <code>bash start-linux.sh</code> (или <code>chmod +x</code> перед запуском).</p>
+  </div>
+
+  <h2><span class="dot"></span>Обновить сайт</h2>
+  <div class="card">
+    <p class="muted">Для владельца репозитория: сайт статический, обновляется загрузкой файлов.</p>
+    <div class="btns stack">
+      <a class="btn" href="https://github.com/bochkooxana2027-oss/veselovskaya" target="_blank" rel="noopener">
+        Репозиторий на GitHub <span class="arw">↗</span>
+      </a>
+      <a class="btn" href="https://github.com/bochkooxana2027-oss/veselovskaya/upload/main" target="_blank" rel="noopener">
+        Загрузить новые файлы <span class="arw">↗</span>
+      </a>
+      <a class="btn" href="https://github.com/bochkooxana2027-oss/veselovskaya/settings/pages" target="_blank" rel="noopener">
+        Настройки Pages <span class="arw">↗</span>
+      </a>
+    </div>
+  </div>
+
+  <h2><span class="dot"></span>Ещё адреса</h2>
+  <div class="card">
+    <div class="btns stack">
+      <a class="btn" href="../">Главная страница сайта <span class="arw">→</span></a>
+      <a class="btn" href="https://veselovskaya.surge.sh/" target="_blank" rel="noopener">Зеркало на surge.sh <span class="arw">↗</span></a>
+      <a class="btn" href="https://veselovskaya-files.surge.sh/" target="_blank" rel="noopener">Файлы на surge.sh <span class="arw">↗</span></a>
+    </div>
+    <p class="hint">Все ссылки на этой странице — обычные ссылки: работают правой кнопкой
+      («Сохранить ссылку как…»), средним кликом и долгим нажатием на телефоне.</p>
+  </div>
+
+  <footer>
+    Веселовская 2.2 · ассистент, который считает, а не угадывает
+    <span class="r"><a href="../">на главную</a></span>
+  </footer>
+</div>
+</body>
+</html>
