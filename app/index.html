@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Веселовская — рабочий ассистент в браузере</title>
-<meta name="description" content="Рабочий ассистент прямо в браузере: точные расчёты, контент-план, промпты и раскадровки. Считает локально, без сети и без ключей.">
+<meta name="description" content="Ассистент в браузере: чат, картинки, мультфильмы из кадров, дизайн и сайты. Расчёты считает локально, без ключей.">
 <meta name="theme-color" content="#0b0d12">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
@@ -122,6 +122,47 @@ footer a:hover{color:var(--teal)}
   .chips .btn{padding:6px 10px;font-size:12.5px}
   textarea{min-height:46px;padding:12px}
 }
+/* ======================= студия: картинки, мультфильмы, сайты ======================= */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{white-space:nowrap;flex:0 0 auto;font:inherit;font-size:13px;padding:8px 13px;border-radius:999px;
+  border:1px solid var(--line);background:#121722;color:var(--dim);cursor:pointer}
+.tabs button:hover{color:var(--txt);border-color:#3a4a68}
+.tabs button.on{background:var(--grad);border:0;color:#0b0d12;font-weight:700}
+.panel{display:none;border:1px solid var(--line);background:var(--card);border-radius:16px;padding:14px 14px 8px;margin:0 0 16px}
+.panel.on{display:block}
+.panel h2{font-size:15px;margin:0 0 3px}
+.panel .pnote{color:var(--dim);font-size:12.5px;line-height:1.5;margin:0 0 12px}
+.panel .pnote b{color:#c9d3e6;font-weight:600}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+@media(max-width:560px){.pgrid{grid-template-columns:1fr}}
+.panel textarea,.panel input[type=file],.panel select{width:100%;background:#0d1119;border:1px solid var(--line);
+  color:var(--txt);border-radius:10px;padding:10px 12px;font:inherit;font-size:14px}
+.panel textarea{resize:vertical;min-height:64px;line-height:1.5}
+.panel select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#8b96ad 50%),linear-gradient(135deg,#8b96ad 50%,transparent 50%);
+  background-position:calc(100% - 18px) 52%,calc(100% - 13px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px}
+.panel .prow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 4px}
+.pstat{font-size:12.5px;color:var(--dim);min-height:18px;margin:6px 0 8px}
+.pstat.err{color:#ff9b9b}
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin:6px 0 12px}
+.shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1119}
+.shot img{display:block;width:100%;height:auto}
+.shot .rowbtns{display:flex;gap:6px;padding:7px 8px;flex-wrap:wrap}
+.shot .cap{font-size:12px;color:var(--dim);padding:6px 9px 0}
+.pal{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.pal .sw{width:64px;text-align:center;font-size:11px;color:var(--dim)}
+.pal .sw i{display:block;height:44px;border-radius:9px;border:1px solid rgba(255,255,255,.12);margin-bottom:4px}
+.player{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#080a0f;margin:8px 0 12px}
+.player canvas{display:block;width:100%;height:auto}
+.codebox{display:none;background:#0a1118;border:1px solid var(--line);border-radius:10px;padding:10px;
+  font-size:12px;line-height:1.5;overflow:auto;max-height:280px;white-space:pre-wrap;word-break:break-word;color:#cfe8e2;margin-bottom:10px}
+.codebox.on{display:block}
+.preview{width:100%;height:420px;border:1px solid var(--line);border-radius:12px;background:#fff;margin:8px 0 12px}
+@media(max-width:560px){.preview{height:340px}}
+@media(max-width:600px){
+  .tabs{flex-wrap:wrap;overflow:visible;gap:6px;padding-bottom:10px}
+  .tabs button{font-size:12.5px;padding:7px 12px}
+}
 </style>
 
 <link rel="canonical" href="https://bochkooxana2027-oss.github.io/veselovskaya/app/">
@@ -136,9 +177,147 @@ footer a:hover{color:var(--teal)}
 </div></header>
 
 <main><div class="wrap">
-  <h1>Напишите запрос <span>в поле ниже</span></h1>
+  <h1>Напишите запрос <span>или выберите инструмент</span></h1>
   <p class="sub">Спросите что угодно: письмо, объяснение, перевод, код, идеи. Расчёты — кредит, проценты, единицы,
-     даты — считаю точно и сразу, локально. Бесплатная модель уже включена: ключ не нужен.</p>
+     даты — считаю точно и сразу. Рисую картинки, собираю мультфильмы из кадров, делаю дизайн и страницы сайтов.
+     Бесплатная модель уже включена: ключ не нужен.</p>
+
+  <div class="tabs" id="tabs" role="tablist" aria-label="Инструменты">
+    <button type="button" data-tab="img" class="on">Картинка</button>
+    <button type="button" data-tab="cartoon">Мультфильм</button>
+    <button type="button" data-tab="design">Дизайн</button>
+    <button type="button" data-tab="site">Сайт</button>
+    <button type="button" data-tab="video">Видео</button>
+  </div>
+
+  <div class="panel on" id="p-img">
+    <h2>Картинка по описанию</h2>
+    <p class="pnote">Пишите по-русски, как объяснили бы художнику: что, где, какой свет и настроение.
+      Бесплатно сервис даёт <b>одну картинку примерно в 45 секунд</b> — если лимит исчерпан, подожду и повторю сама.</p>
+    <textarea id="imgp" placeholder="например: уютная кофейня утром, тёплый свет, дерево и медь, человек за стойкой"></textarea>
+    <div class="pgrid">
+      <select id="imgsz" aria-label="Размер">
+        <option value="1024x1024">квадрат 1:1</option>
+        <option value="1280x720">горизонтально 16:9</option>
+        <option value="720x1280">вертикально 9:16</option>
+      </select>
+      <select id="imgst" aria-label="Стиль">
+        <option value="">без стиля</option>
+        <option value="фотореализм, естественный свет, 50 мм">фото</option>
+        <option value="иллюстрация, акварель, мягкие цвета">акварель</option>
+        <option value="3D-рендер, чистые формы, студийный свет">3D</option>
+        <option value="плоская векторная графика, минимализм">минимализм</option>
+        <option value="неон, киберпанк, ночной город">киберпанк</option>
+      </select>
+    </div>
+    <div class="prow"><button class="btn primary" type="button" id="imggo">Нарисовать</button>
+      <span class="pstat" id="imgstat"></span></div>
+    <div class="shots" id="imgout"></div>
+  </div>
+
+  <div class="panel" id="p-cartoon">
+    <h2>Мультфильм из кадров</h2>
+    <p class="pnote">Модель придумывает историю и раскадровку, потом я рисую кадры по очереди.
+      <b>Каждый кадр — минимум 45 секунд ожидания</b> в бесплатном режиме: три кадра это примерно две-три минуты.
+      Готовые кадры можно проиграть и собрать в видео прямо здесь.</p>
+    <textarea id="ctp" placeholder="например: лисёнок учится кататься на скейте во дворе, добрая история"></textarea>
+    <div class="pgrid">
+      <select id="ctn" aria-label="Сколько кадров">
+        <option value="3">3 кадра</option>
+        <option value="4">4 кадра</option>
+        <option value="5">5 кадров</option>
+        <option value="6">6 кадров</option>
+      </select>
+      <select id="ctst" aria-label="Стиль мультфильма">
+        <option value="мультяшный 3D-рендер, мягкий свет, детская книжка">мультяшный 3D</option>
+        <option value="рисунок акварелью, детская книга">акварель</option>
+        <option value="плоская анимация, чистые цвета">плоская анимация</option>
+        <option value="пластилиновая анимация">пластилин</option>
+      </select>
+    </div>
+    <div class="prow"><button class="btn primary" type="button" id="ctgo">Собрать мультфильм</button>
+      <span class="pstat" id="ctstat"></span></div>
+    <div class="player" id="ctplayer" style="display:none"><canvas id="ctcv" width="1024" height="576"></canvas></div>
+    <div class="prow" id="ctctrl" style="display:none">
+      <button class="btn" type="button" id="ctplay">проиграть</button>
+      <button class="btn" type="button" id="ctwebm">скачать видео (WebM)</button>
+      <span class="pstat" id="ctvstat"></span>
+    </div>
+    <div class="shots" id="ctout"></div>
+  </div>
+
+  <div class="panel" id="p-design">
+    <h2>Дизайн: логотип, обложка, макет</h2>
+    <p class="pnote">Опишите задачу и для кого она. Я нарисую вариант и вытащу из него палитру — с готовыми CSS-переменными.
+      <b>Одна генерация примерно в 45 секунд.</b></p>
+    <textarea id="dsp" placeholder="например: знак для кофейни «Тёплый угол», тёплые цвета, для вывески и аватарки"></textarea>
+    <div class="pgrid">
+      <select id="dst" aria-label="Тип дизайна">
+        <option value="логотип, знак, минимализм, ровный фон, без надписей">логотип</option>
+        <option value="обложка для соцсетей, крупный объект, свободное место под текст">обложка</option>
+        <option value="макет лендинга, UI, светлая тема, аккуратные блоки">макет сайта</option>
+        <option value="афиша, крупная типографика, контраст">афиша</option>
+      </select>
+      <select id="dssz" aria-label="Размер">
+        <option value="1024x1024">квадрат 1:1</option>
+        <option value="1280x720">16:9</option>
+        <option value="720x1280">9:16</option>
+      </select>
+    </div>
+    <div class="prow"><button class="btn primary" type="button" id="dsgo">Сделать</button>
+      <span class="pstat" id="dsstat"></span></div>
+    <div class="shots" id="dsout"></div>
+    <div class="pal" id="dspal"></div>
+  </div>
+
+  <div class="panel" id="p-site">
+    <h2>Сайт по описанию</h2>
+    <p class="pnote">Модель пишет готовую страницу: один HTML-файл, стили внутри, без внешних картинок и библиотек.
+      Покажу превью, дам скачать и открыть в новой вкладке.</p>
+    <textarea id="stp" placeholder="например: страница мастера маникюра в Казани: услуги с ценами, запись, отзывы"></textarea>
+    <div class="pgrid">
+      <select id="stt" aria-label="Стиль страницы">
+        <option value="спокойный, светлый, аккуратный">спокойный</option>
+        <option value="строгий деловой, тёмная шапка, много воздуха">деловой</option>
+        <option value="тёплый, мягкие цвета, крупные блоки">тёплый</option>
+        <option value="яркий, современный, крупный шрифт">яркий</option>
+      </select>
+      <button class="btn primary" type="button" id="stgo">Собрать страницу</button>
+    </div>
+    <div class="pstat" id="ststat"></div>
+    <iframe class="preview" id="stframe" style="display:none" sandbox="allow-scripts allow-forms" title="Превью сайта"></iframe>
+    <div class="prow" id="stctrl" style="display:none">
+      <button class="btn" type="button" id="stdl">скачать .html</button>
+      <button class="btn" type="button" id="stcode">показать код</button>
+      <button class="btn" type="button" id="stnew">открыть в новой вкладке</button>
+    </div>
+    <pre class="codebox" id="stcodebox"></pre>
+  </div>
+
+  <div class="panel" id="p-video">
+    <h2>Видео из ваших кадров</h2>
+    <p class="pnote"><b>Сразу честно:</b> генерации видео из текста без ключа нет ни здесь, ни в бесплатных сервисах —
+      это дорогая задача. Зато я собираю настоящее видео из готовых кадров: выбираете картинки, задаёте время показа
+      и получаете WebM-файл. Всё считается в вашем браузере, файлы никуда не загружаются.</p>
+    <input id="vdf" type="file" accept="image/*" multiple aria-label="Кадры для видео">
+    <div class="pgrid" style="margin-top:10px">
+      <select id="vdd" aria-label="Время на кадр">
+        <option value="1.5">1,5 секунды на кадр</option>
+        <option value="1">1 секунда</option>
+        <option value="2.5">2,5 секунды</option>
+        <option value="4">4 секунды</option>
+      </select>
+      <select id="vdsz" aria-label="Размер видео">
+        <option value="1280x720">1280×720</option>
+        <option value="1920x1080">1920×1080</option>
+        <option value="1080x1920">1080×1920</option>
+      </select>
+    </div>
+    <div class="prow"><button class="btn primary" type="button" id="vdgo">Собрать видео</button>
+      <span class="pstat" id="vdstat"></span></div>
+    <div class="player" id="vdplayer" style="display:none"><canvas id="vdcv" width="1280" height="720"></canvas></div>
+    <div class="prow" id="vdctrl" style="display:none"><button class="btn" type="button" id="vddl">скачать видео</button></div>
+  </div>
 
   <div id="chat" aria-live="polite"></div>
 
@@ -152,6 +331,7 @@ footer a:hover{color:var(--teal)}
   <div class="hint">
     <span>Enter — отправить, Shift+Enter — новая строка</span>
     <span>История хранится только в этом браузере</span>
+    <span>Картинка — примерно раз в 45 секунд</span>
     <button class="btn sm" id="clear" type="button">очистить историю</button>
   </div>
 </div></main>
@@ -180,6 +360,10 @@ footer a:hover{color:var(--teal)}
     <div class="field">
       <label for="mmodel">Модель</label>
       <input id="mmodel" type="text" autocomplete="off" spellcheck="false" placeholder="например, openrouter/auto">
+    </div>
+    <div class="field">
+      <label for="mpollen">Ключ Pollinations — необязательно, снимает лимит на картинки</label>
+      <input id="mpollen" type="password" autocomplete="off" spellcheck="false" placeholder="ключ из enter.pollinations.ai">
     </div>
     <div class="field" id="basewrap" style="display:none">
       <label for="mbase">Адрес сервера</label>
@@ -743,7 +927,7 @@ var PROVIDERS={
   gemini:{name:"Google Gemini",base:"",model:"gemini-2.0-flash"},
   custom:{name:"Свой сервер (OpenAI-совместимый)",base:"",model:""}
 };
-var cfg={provider:"free",key:"",model:"",base:""};
+var cfg={provider:"free",key:"",model:"",base:"",pollen:""};
 try{ var _c=localStorage.getItem(MKEY); if(_c) cfg=Object.assign(cfg,JSON.parse(_c)); }catch(e){}
 function saveCfg(){ try{ localStorage.setItem(MKEY,JSON.stringify(cfg)); }catch(e){} }
 function freeMode(){ return (cfg.provider||"free")==="free"; }
@@ -784,8 +968,10 @@ function inline(t){
   return esc(t).replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/`([^`]+)`/g,"<code>$1</code>");
 }
 
-function callModel(messages){
+function callModel(messages,opts){
   var key=(cfg.key||"").trim(), p=cfg.provider||"free";
+  var MT=(opts&&opts.maxTokens)||1200;
+  var TP=(opts&&opts.temperature)!=null?opts.temperature:0.4;
   if(p!=="free" && !key) return Promise.reject(new Error("Ключ не задан"));
   if(p==="gemini"){
     var gm=(cfg.model||PROVIDERS.gemini.model).trim();
@@ -793,7 +979,7 @@ function callModel(messages){
       +":generateContent?key="+encodeURIComponent(key);
     var body={contents:messages.filter(function(m){return m.role!=="system";}).map(function(m){
         return {role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]};
-      }),generationConfig:{temperature:0.4,maxOutputTokens:1200}};
+      }),generationConfig:{temperature:TP,maxOutputTokens:MT}};
     var sys=messages.filter(function(m){return m.role==="system";}).map(function(m){return m.content;}).join("\n");
     if(sys) body.systemInstruction={parts:[{text:sys}]};
     return fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
@@ -812,7 +998,7 @@ function callModel(messages){
   if(p==="openrouter"){ headers["HTTP-Referer"]=location.origin; headers["X-Title"]="Veselovskaya web"; }
   var url=/\/chat\/completions$/.test(base)?base:base+"/chat/completions";
   return fetch(url,{method:"POST",headers:headers,
-      body:JSON.stringify({model:mdl,messages:messages,temperature:0.4,max_tokens:1200})})
+      body:JSON.stringify({model:mdl,messages:messages,temperature:TP,max_tokens:MT})})
     .then(readJson).then(function(j){
       var m=j.choices&&j.choices[0]&&j.choices[0].message;
       if(!m) throw new Error(friendly(j));
@@ -922,6 +1108,7 @@ function finish(r){
 function submit(){
   var text=q.value.trim();
   if(!text) return;
+  if(window.VStudio && VStudio.tryRoute(text)){ q.value=""; q.style.height="auto"; return; }
   q.value=""; q.style.height="auto";
   var userHtml=esc(text).replace(/\n/g,"<br>");
   var prior=hist.slice();
@@ -977,6 +1164,7 @@ function openModel(){
   fKey.value=cfg.key||"";
   fModel.value=cfg.model||"";
   fBase.value=cfg.base||"";
+  var fp=document.getElementById("mpollen"); if(fp) fp.value=cfg.pollen||"";
   syncFields();
   stat.textContent=""; stat.className="status";
   ovl.classList.add("on");
@@ -988,6 +1176,7 @@ function readForm(){
   cfg.key=fKey.value.trim();
   cfg.model=fModel.value.trim();
   cfg.base=fBase.value.trim();
+  var fp=document.getElementById("mpollen"); if(fp) cfg.pollen=fp.value.trim();
   saveCfg(); refreshModelBtn();
 }
 mbtn.addEventListener("click",openModel);
@@ -1025,7 +1214,8 @@ refreshModelBtn();
 if(!hist.length){
   bubble("bot",
     '<p><b>Здравствуйте. Пишите обычным текстом — как в любом чате.</b></p>'
-    +"<ul><li>Любые вопросы и просьбы: письмо, объяснение, перевод, код, план, идеи.</li>"
+    +"<ul><li><b>Инструменты сверху:</b> картинка, мультфильм, дизайн, сайт, видео из кадров.</li>"
+    +"<li>Любые вопросы и просьбы: письмо, объяснение, перевод, код, план, идеи.</li>"
     +"<li>Расчёты — кредит, проценты, скидки, НДС, единицы, даты — считаю точно и мгновенно.</li>"
     +"<li>Контент-план таблицей с CSV, раскадровка, промпт для картинки.</li></ul>"
     +'<p class="honest">Бесплатная модель включена сразу, ключ не нужен. Если нужна другая модель или стабильность — подключите свой ключ кнопкой «модель» вверху. Для расчётов интернет не требуется.</p>',
@@ -1033,9 +1223,503 @@ if(!hist.length){
 }
 </script>
 <script>
+/* =================== студия: картинки, мультфильмы, дизайн, сайты, видео =================== */
+"use strict";
+(function(){
+function el(id){ return document.getElementById(id); }
+var TABS=["img","cartoon","design","site","video"];
+
+function openTab(id){
+  if(TABS.indexOf(id)<0) return;
+  TABS.forEach(function(t){ var p=el("p-"+t); if(p) p.classList.toggle("on",t===id); });
+  var bs=el("tabs").querySelectorAll("button");
+  for(var i=0;i<bs.length;i++) bs[i].classList.toggle("on",bs[i].getAttribute("data-tab")===id);
+  var p=el("p-"+id); if(p) p.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+el("tabs").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-tab]"); if(b) openTab(b.getAttribute("data-tab"));
+});
+
+/* ---------------- лимиты сервиса ---------------- */
+function waitSec(m){ var x=/retry after\s*(\d+)/i.exec(String(m||"")); return x?parseInt(x[1],10):0; }
+function pause(sec,setStat,prefix){
+  return new Promise(function(res){
+    var l=Math.max(0,Math.round(sec));
+    (function t(){
+      if(setStat) setStat((prefix||"лимит сервиса")+": жду "+l+" с");
+      if(l<=0){ res(); return; }
+      l--; setTimeout(t,1000);
+    })();
+  });
+}
+function imgHeaders(){
+  var h={};
+  if(typeof cfg!=="undefined" && cfg && cfg.pollen) h["Authorization"]="Bearer "+cfg.pollen;
+  return h;
+}
+var IMGBASE="https://image.pollinations.ai/prompt/";
+function imgUrl(prompt,w,h,seed){
+  return IMGBASE+encodeURIComponent(prompt)+"?width="+w+"&height="+h+"&seed="+seed+"&nologo=true&safe=true";
+}
+var imgQ=Promise.resolve();
+function qImg(fn){ var r=imgQ.then(fn,fn); imgQ=r.then(function(){},function(){}); return r; }
+
+function fetchImg(prompt,w,h,seed){
+  var ctl=("AbortController" in window)?new AbortController():null;
+  var to=setTimeout(function(){ if(ctl){ try{ ctl.abort(); }catch(e){} } },200000);
+  var init={headers:imgHeaders()};
+  if(ctl) init.signal=ctl.signal;
+  return fetch(imgUrl(prompt,w,h,seed),init).then(function(r){
+    clearTimeout(to);
+    if(r.ok) return r.blob();
+    return r.text().then(function(t){
+      var j=null; try{ j=JSON.parse(t); }catch(e){}
+      var msg=(j&&j.error&&j.error.message)||(j&&j.message)||String(t).slice(0,200)||("HTTP "+r.status);
+      var err=new Error(msg); err.status=r.status; err.wait=waitSec(msg); throw err;
+    });
+  },function(e){ clearTimeout(to); throw e; });
+}
+
+function genImage(prompt,w,h,setStat){
+  var seed=Math.floor(Math.random()*1e6), tries=0;
+  function loop(){
+    tries++;
+    return fetchImg(prompt,w,h,seed).catch(function(e){
+      var s=e.wait||0;
+      var soft=(e.status===402)||s>0||/free limit|rate|too many/i.test(String(e.message));
+      if(tries<10 && soft) return pause(s||45,setStat,"бесплатный лимит картинок").then(loop);
+      throw e;
+    });
+  }
+  return qImg(loop).then(function(blob){
+    return new Promise(function(res,rej){
+      var url=URL.createObjectURL(blob), im=new Image();
+      im.onload=function(){ res({blob:blob,url:url,w:im.naturalWidth,h:im.naturalHeight,alt:prompt}); };
+      im.onerror=function(){ rej(new Error("картинка не открылась")); };
+      im.src=url;
+    });
+  });
+}
+
+function textCall(msgs,opts,setStat){
+  var tries=0;
+  function go(){
+    tries++;
+    return callModel(msgs,opts).catch(function(e){
+      var s=waitSec(e&&e.message);
+      if(tries<3 && (s>0||/free limit|rate|429/i.test(String(e&&e.message)))){
+        return pause(s||45,setStat,"бесплатный лимит текста").then(go);
+      }
+      throw e;
+    });
+  }
+  return go();
+}
+
+function dl(url,name){
+  var a=document.createElement("a"); a.href=url; a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(function(){ a.remove(); },900);
+}
+function stamp(){ return new Date().toISOString().slice(0,19).replace(/[:T]/g,"-"); }
+
+/* ---------------- картинка ---------------- */
+function runImage(preset){
+  var out=el("imgout"), stat=el("imgstat"), btn=el("imggo");
+  if(typeof preset==="string" && preset) el("imgp").value=preset;
+  var prompt=(el("imgp").value||"").trim();
+  if(!prompt){ stat.className="pstat err"; stat.textContent="Напишите, что нарисовать."; return; }
+  var size=(el("imgsz").value||"1024x1024").split("x");
+  var style=el("imgst").value;
+  var full=prompt+(style?", "+style:"")+", без текста и водяных знаков";
+  btn.disabled=true; stat.className="pstat"; stat.textContent="рисую…";
+  genImage(full,+size[0],+size[1],function(t){ stat.textContent=t; }).then(function(r){
+    stat.textContent="готово · "+r.w+"×"+r.h;
+    var box=document.createElement("div"); box.className="shot";
+    var im=document.createElement("img"); im.src=r.url; im.alt=prompt; im.loading="lazy";
+    var row=document.createElement("div"); row.className="rowbtns";
+    var b1=document.createElement("button"); b1.type="button"; b1.className="btn sm"; b1.textContent="скачать";
+    b1.onclick=function(){ dl(r.url,"kartinka-"+stamp()+".jpg"); };
+    var b2=document.createElement("button"); b2.type="button"; b2.className="btn sm"; b2.textContent="ещё вариант";
+    b2.onclick=function(){ runImage(prompt); };
+    row.appendChild(b1); row.appendChild(b2);
+    box.appendChild(im); box.appendChild(row);
+    out.insertBefore(box,out.firstChild);
+  }).catch(function(e){
+    stat.className="pstat err";
+    stat.textContent="не получилось: "+String(e&&e.message||e).slice(0,160);
+  }).then(function(){ btn.disabled=false; });
+}
+el("imggo").addEventListener("click",function(){ runImage(); });
+
+/* ---------------- мультфильм ---------------- */
+var CT={frames:[],imgs:[],blob:null,playing:false,timer:null};
+
+function parseScenes(txt,n){
+  var s=String(txt||"").replace(/```json/gi,"").replace(/```/g,"").trim();
+  var a=s.indexOf("["), b=s.lastIndexOf("]");
+  if(a>=0&&b>a){
+    try{
+      var arr=JSON.parse(s.slice(a,b+1));
+      if(Object.prototype.toString.call(arr)==="[object Array]" && arr.length){
+        return arr.slice(0,n).map(function(o,i){
+          return {caption:String(o.caption||("Кадр "+(i+1))),prompt:String(o.prompt||o.description||"")};
+        }).filter(function(o){ return o.prompt; });
+      }
+    }catch(e){}
+  }
+  return [];
+}
+
+function drawCover(ctx,img,W,H){
+  var s=Math.max(W/img.width,H/img.height), w=img.width*s, h=img.height*s;
+  ctx.drawImage(img,(W-w)/2,(H-h)/2,w,h);
+}
+
+function recordFrames(urls,secPer,W,H,onProgress){
+  return new Promise(function(res,rej){
+    if(!("MediaRecorder" in window)) return rej(new Error("этот браузер не умеет записывать видео"));
+    var cv=document.createElement("canvas"); cv.width=W; cv.height=H;
+    var ctx=cv.getContext("2d");
+    var imgs=[], loaded=0;
+    function fail(){ rej(new Error("кадры не загрузились")); }
+
+    function start(){
+      var stream=cv.captureStream(25);
+      var types=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"];
+      var mt="";
+      for(var i=0;i<types.length;i++){ if(MediaRecorder.isTypeSupported(types[i])){ mt=types[i]; break; } }
+      var rec=new MediaRecorder(stream, mt?{mimeType:mt,videoBitsPerSecond:4000000}:undefined);
+      var chunks=[];
+      rec.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
+      rec.onstop=function(){ res(new Blob(chunks,{type:mt||"video/webm"})); };
+      var total=imgs.length*secPer, last=-1;
+      ctx.fillStyle="#0b0d12"; ctx.fillRect(0,0,W,H);
+      drawCover(ctx,imgs[0],W,H);
+      rec.start();
+      var t0=performance.now();
+      (function tick(){
+        var t=(performance.now()-t0)/1000;
+        if(t>=total){ rec.stop(); return; }
+        var idx=Math.min(imgs.length-1,Math.floor(t/secPer));
+        if(idx!==last){ last=idx; ctx.fillStyle="#0b0d12"; ctx.fillRect(0,0,W,H); drawCover(ctx,imgs[idx],W,H); }
+        if(onProgress) onProgress(Math.min(t,total),total);
+        requestAnimationFrame(tick);
+      })();
+    }
+
+    urls.forEach(function(u,i){
+      var im=new Image();
+      im.onload=function(){ imgs[i]=im; loaded++; if(loaded===urls.length) start(); };
+      im.onerror=fail;
+      im.src=u;
+    });
+  });
+}
+
+function showFrames(){
+  var cv=el("ctcv"), ctx=cv.getContext("2d"), W=cv.width, H=cv.height;
+  el("ctplayer").style.display="block";
+  el("ctctrl").style.display="flex";
+  el("ctout").innerHTML="";
+  CT.frames.forEach(function(f,i){
+    var box=document.createElement("div"); box.className="shot";
+    var im=document.createElement("img"); im.src=f.url; im.alt=f.caption;
+    var cap=document.createElement("div"); cap.className="cap"; cap.textContent=(i+1)+". "+f.caption;
+    var row=document.createElement("div"); row.className="rowbtns";
+    var b=document.createElement("button"); b.type="button"; b.className="btn sm"; b.textContent="скачать кадр";
+    b.onclick=function(){ dl(f.url,"kadr-"+(i+1)+".jpg"); };
+    row.appendChild(b);
+    box.appendChild(im); box.appendChild(cap); box.appendChild(row);
+    el("ctout").appendChild(box);
+  });
+  var img=new Image();
+  img.onload=function(){ ctx.fillStyle="#0b0d12"; ctx.fillRect(0,0,W,H); drawCover(ctx,img,W,H); };
+  img.src=CT.frames[0].url;
+}
+
+function playFrames(){
+  var cv=el("ctcv"), ctx=cv.getContext("2d"), W=cv.width, H=cv.height;
+  if(CT.playing){ CT.playing=false; clearTimeout(CT.timer); el("ctplay").textContent="проиграть"; return; }
+  var i=0; CT.playing=true; el("ctplay").textContent="пауза";
+  (function step(){
+    if(!CT.playing) return;
+    var im=new Image();
+    im.onload=function(){ ctx.fillStyle="#0b0d12"; ctx.fillRect(0,0,W,H); drawCover(ctx,im,W,H); };
+    im.src=CT.frames[i].url;
+    i=(i+1)%CT.frames.length;
+    CT.timer=setTimeout(step,1400);
+  })();
+}
+
+function runCartoon(preset){
+  var stat=el("ctstat"), btn=el("ctgo");
+  if(typeof preset==="string" && preset) el("ctp").value=preset;
+  var idea=(el("ctp").value||"").trim();
+  if(!idea){ stat.className="pstat err"; stat.textContent="Опишите сюжет в двух словах."; return; }
+  var n=parseInt(el("ctn").value,10)||3, style=el("ctst").value;
+  btn.disabled=true; CT.blob=null;
+  el("ctplayer").style.display="none"; el("ctctrl").style.display="none"; el("ctout").innerHTML="";
+  stat.className="pstat"; stat.textContent="придумываю раскадровку…";
+  var msgs=[
+    {role:"system",content:"Ты — режиссёр коротких мультфильмов. Отвечай только JSON-массивом, без markdown и пояснений."},
+    {role:"user",content:"Идея: "+idea+"\nСтиль: "+style+"\nСделай ровно "+n+" последовательных кадра одной истории."
+      +" Формат: [{\"caption\":\"короткая подпись по-русски\",\"prompt\":\"подробное описание кадра по-английски для генератора изображений: тот же герой, та же сцена, что и в других кадрах\"}]."
+      +" Описания должны быть визуальными и конкретными, герой одинаковый во всех кадрах."}
+  ];
+  var scenesP=textCall(msgs,{maxTokens:900,temperature:.8},function(t){ stat.textContent=t; })
+    .then(function(txt){
+      var s=parseScenes(txt,n);
+      if(!s.length){
+        s=[];
+        for(var i=0;i<n;i++){
+          s.push({caption:"Кадр "+(i+1),prompt:idea+", scene "+(i+1)+" of "+n+", same character throughout, "+style});
+        }
+        stat.textContent="раскадровку не разобрала — рисую кадры напрямую";
+      }
+      return s;
+    });
+  scenesP.then(function(scenes){
+    CT.frames=[];
+    var chain=Promise.resolve();
+    scenes.forEach(function(sc,i){
+      chain=chain.then(function(){
+        stat.textContent="рисую кадр "+(i+1)+" из "+scenes.length+"…";
+        var p=sc.prompt+", consistent character and style, "+style+", без текста и водяных знаков";
+        return genImage(p,1024,576,function(t){ stat.textContent="кадр "+(i+1)+"/"+scenes.length+" · "+t; })
+          .then(function(r){ CT.frames.push({url:r.url,blob:r.blob,caption:sc.caption}); });
+      });
+    });
+    return chain;
+  }).then(function(){
+    stat.textContent="готово: "+CT.frames.length+" кадров. Можно проиграть или собрать видео.";
+    showFrames();
+  }).catch(function(e){
+    stat.className="pstat err";
+    stat.textContent="не получилось: "+String(e&&e.message||e).slice(0,160);
+  }).then(function(){ btn.disabled=false; });
+}
+
+el("ctgo").addEventListener("click",function(){ runCartoon(); });
+el("ctplay").addEventListener("click",playFrames);
+el("ctwebm").addEventListener("click",function(){
+  if(!CT.frames.length){ el("ctvstat").textContent="сначала соберите кадры"; return; }
+  var st=el("ctvstat"), btn=this;
+  btn.disabled=true; st.textContent="пишу видео…";
+  recordFrames(CT.frames.map(function(f){ return f.url; }),1.5,1024,576,function(t,total){
+    st.textContent="пишу видео… "+Math.round(t)+" из "+Math.round(total)+" с";
+  }).then(function(blob){
+    var url=URL.createObjectURL(blob);
+    st.textContent="видео готово · "+Math.round(blob.size/1024)+" КБ";
+    dl(url,"multfilm-"+stamp()+".webm");
+  }).catch(function(e){
+    st.textContent="не вышло: "+String(e&&e.message||e).slice(0,120);
+  }).then(function(){ btn.disabled=false; });
+});
+
+/* ---------------- дизайн ---------------- */
+function hx(n){ var s=Math.round(n).toString(16); return s.length<2?"0"+s:s; }
+function palette(url){
+  return new Promise(function(res){
+    var im=new Image();
+    im.onload=function(){
+      var c=document.createElement("canvas"); c.width=48; c.height=48;
+      var x=c.getContext("2d"); x.drawImage(im,0,0,48,48);
+      var d;
+      try{ d=x.getImageData(0,0,48,48).data; }catch(e){ return res([]); }
+      var b={};
+      for(var i=0;i<d.length;i+=4){
+        if(d[i+3]<200) continue;
+        var k=(d[i]>>4)+"_"+(d[i+1]>>4)+"_"+(d[i+2]>>4);
+        var o=b[k]||(b[k]={n:0,r:0,g:0,b:0});
+        o.n++; o.r+=d[i]; o.g+=d[i+1]; o.b+=d[i+2];
+      }
+      var arr=Object.keys(b).map(function(k){ var o=b[k]; return {n:o.n,r:o.r/o.n,g:o.g/o.n,b:o.b/o.n}; })
+        .sort(function(p,q){ return q.n-p.n; });
+      var out=[];
+      arr.forEach(function(col){
+        if(out.length>=5) return;
+        var far=out.every(function(o){
+          var dr=o.r-col.r,dg=o.g-col.g,db=o.b-col.b;
+          return Math.sqrt(dr*dr+dg*dg+db*db)>50;
+        });
+        if(far||!out.length) out.push({r:col.r,g:col.g,b:col.b,hex:"#"+hx(col.r)+hx(col.g)+hx(col.b)});
+      });
+      res(out);
+    };
+    im.onerror=function(){ res([]); };
+    im.src=url;
+  });
+}
+function runDesign(preset){
+  var out=el("dsout"), stat=el("dsstat"), btn=el("dsgo"), palEl=el("dspal");
+  if(typeof preset==="string" && preset) el("dsp").value=preset;
+  var p=(el("dsp").value||"").trim();
+  if(!p){ stat.className="pstat err"; stat.textContent="Опишите, что за дизайн нужен."; return; }
+  var type=el("dst").value, sz=(el("dssz").value||"1024x1024").split("x");
+  btn.disabled=true; stat.className="pstat"; stat.textContent="делаю…"; palEl.innerHTML="";
+  genImage(p+", "+type+", аккуратная композиция, чистый фон",+sz[0],+sz[1],function(t){ stat.textContent=t; })
+    .then(function(r){
+      stat.textContent="готово · "+r.w+"×"+r.h;
+      var box=document.createElement("div"); box.className="shot";
+      var im=document.createElement("img"); im.src=r.url; im.alt=p;
+      var row=document.createElement("div"); row.className="rowbtns";
+      var b1=document.createElement("button"); b1.type="button"; b1.className="btn sm"; b1.textContent="скачать";
+      b1.onclick=function(){ dl(r.url,"dizayn-"+stamp()+".jpg"); };
+      var b2=document.createElement("button"); b2.type="button"; b2.className="btn sm"; b2.textContent="ещё вариант";
+      b2.onclick=function(){ runDesign(p); };
+      row.appendChild(b1); row.appendChild(b2);
+      box.appendChild(im); box.appendChild(row);
+      out.insertBefore(box,out.firstChild);
+      return palette(r.url);
+    }).then(function(cols){
+      if(!cols||!cols.length) return;
+      palEl.innerHTML="";
+      cols.forEach(function(c){
+        var s=document.createElement("div"); s.className="sw";
+        s.innerHTML='<i style="background:'+c.hex+'"></i>'+c.hex;
+        palEl.appendChild(s);
+      });
+      var css=":root{"
+        +cols.map(function(c,i){ return "  --c"+(i+1)+":"+c.hex+";"; }).join("\n")
+        +"\n}";
+      var cp=document.createElement("button"); cp.type="button"; cp.className="btn sm"; cp.textContent="скопировать CSS";
+      cp.onclick=function(){
+        copyText(css).then(function(){ cp.textContent="скопировано"; setTimeout(function(){ cp.textContent="скопировать CSS"; },1500); });
+      };
+      palEl.appendChild(cp);
+    }).catch(function(e){
+      stat.className="pstat err";
+      stat.textContent="не получилось: "+String(e&&e.message||e).slice(0,160);
+    }).then(function(){ btn.disabled=false; });
+}
+el("dsgo").addEventListener("click",function(){ runDesign(); });
+
+/* ---------------- сайт ---------------- */
+var SITE={html:""};
+function stripFences(t){
+  var s=String(t||"").replace(/\r/g,"");
+  var m=s.match(/<!DOCTYPE[\s\S]*<\/html>/i)||s.match(/<html[\s\S]*<\/html>/i);
+  if(m) return m[0];
+  return s.replace(/^```[a-z]*\s*/i,"").replace(/```\s*$/,"").trim();
+}
+function runSite(preset){
+  var stat=el("ststat"), btn=el("stgo"), fr=el("stframe");
+  if(typeof preset==="string" && preset) el("stp").value=preset;
+  var d=(el("stp").value||"").trim();
+  if(!d){ stat.className="pstat err"; stat.textContent="Опишите сайт: для кого, что продаёт, какие блоки."; return; }
+  var tone=el("stt").value;
+  btn.disabled=true; stat.className="pstat"; stat.textContent="пишу страницу…";
+  var msgs=[
+    {role:"system",content:"Ты — веб-дизайнер и фронтендер. Собери готовую одностраничную посадочную страницу."
+      +" Верни ТОЛЬКО HTML-документ: с <!DOCTYPE html>, без markdown, без пояснений до и после."
+      +" Всё оформление — во внутреннем <style>, без внешних библиотек, шрифтов и картинок (вместо фото — CSS-градиенты, фигуры, эмодзи)."
+      +" Вёрстка адаптивная, системные шрифты, крупный читаемый текст, аккуратные отступы."
+      +" Текст по-русски, живой и конкретный, без воды, без «в современном мире» и без выдуманных наград."
+      +" Контакты и цены — явно помечены как примеры. Форма без отправки (onsubmit=\"return false\" и сообщение)."},
+    {role:"user",content:"Сайт: "+d+"\nСтиль: "+tone
+      +"\nБлоки: первый экран с заголовком и кнопкой, 3 преимущества, услуги или товары с ценами, отзывы, форма заявки, футер с контактами."}
+  ];
+  textCall(msgs,{maxTokens:4000,temperature:.7},function(t){ stat.textContent=t; })
+    .then(function(txt){
+      var html=stripFences(txt);
+      if(!/<html/i.test(html)||html.length<200) throw new Error("модель вернула не страницу — попробуйте ещё раз");
+      SITE.html=html;
+      fr.srcdoc=html; fr.style.display="block";
+      el("stctrl").style.display="flex";
+      el("stcodebox").textContent=html;
+      el("stcodebox").classList.remove("on");
+      el("stcode").textContent="показать код";
+      stat.textContent="готово · "+Math.round(html.length/1024)+" КБ";
+    }).catch(function(e){
+      stat.className="pstat err";
+      stat.textContent="не получилось: "+String(e&&e.message||e).slice(0,180);
+    }).then(function(){ btn.disabled=false; });
+}
+el("stgo").addEventListener("click",function(){ runSite(); });
+el("stdl").addEventListener("click",function(){
+  if(!SITE.html) return;
+  var blob=new Blob([SITE.html],{type:"text/html;charset=utf-8"});
+  dl(URL.createObjectURL(blob),"sayt-"+stamp()+".html");
+});
+el("stcode").addEventListener("click",function(){
+  var box=el("stcodebox");
+  box.classList.toggle("on");
+  this.textContent=box.classList.contains("on")?"скрыть код":"показать код";
+});
+el("stnew").addEventListener("click",function(){
+  if(!SITE.html) return;
+  var blob=new Blob([SITE.html],{type:"text/html;charset=utf-8"});
+  window.open(URL.createObjectURL(blob),"_blank");
+});
+
+/* ---------------- видео из кадров ---------------- */
+var VD={urls:[],names:[],blob:null};
+el("vdf").addEventListener("change",function(){
+  VD.urls=[]; VD.names=[];
+  var fs=this.files||[];
+  for(var i=0;i<fs.length;i++){ VD.urls.push(URL.createObjectURL(fs[i])); VD.names.push(fs[i].name); }
+  el("vdstat").textContent=fs.length?("выбрано кадров: "+fs.length):"";
+});
+el("vdgo").addEventListener("click",function(){
+  var stat=el("vdstat"), btn=this;
+  if(!VD.urls.length){ stat.className="pstat err"; stat.textContent="Сначала выберите картинки."; return; }
+  var sec=parseFloat(el("vdd").value)||1.5;
+  var sz=(el("vdsz").value||"1280x720").split("x");
+  var W=parseInt(sz[0],10), H=parseInt(sz[1],10);
+  btn.disabled=true; stat.className="pstat"; stat.textContent="собираю…";
+  var cv=el("vdcv"); cv.width=W; cv.height=H;
+  el("vdplayer").style.display="block";
+  var grid=document.createElement("div"); grid.className="shots"; grid.id="vdgrid";
+  VD.urls.forEach(function(u,i){
+    var box=document.createElement("div"); box.className="shot";
+    var im=document.createElement("img"); im.src=u; im.alt=VD.names[i]||"";
+    box.appendChild(im); grid.appendChild(box);
+  });
+  el("vdplayer").after(grid);
+  recordFrames(VD.urls,sec,W,H,function(t,total){
+    stat.textContent="собираю… "+Math.round(t)+" из "+Math.round(total)+" с";
+  }).then(function(blob){
+    VD.blob=blob;
+    var url=URL.createObjectURL(blob);
+    var v=document.createElement("video");
+    v.controls=true; v.src=url; v.style.width="100%"; v.style.display="block";
+    var host=el("vdplayer"); host.innerHTML=""; host.appendChild(v);
+    el("vdctrl").style.display="flex";
+    el("vddl").onclick=function(){ dl(url,"video-"+stamp()+".webm"); };
+    stat.textContent="готово · "+Math.round(blob.size/1024)+" КБ · "+W+"×"+H;
+  }).catch(function(e){
+    stat.className="pstat err";
+    stat.textContent="не вышло: "+String(e&&e.message||e).slice(0,140);
+  }).then(function(){ btn.disabled=false; });
+});
+
+/* ---------------- маршрутизация из чата ---------------- */
+function tryRoute(text){
+  var t=String(text||"").trim(), low=t.toLowerCase();
+  var m;
+  if((m=/^(нарисуй|нарисуйте|сгенерируй картинку|сгенерируй изображение|сделай картинку|сделай изображение)\s+(.+)$/i.exec(t))){
+    openTab("img"); runImage(m[2]); return true;
+  }
+  if((m=/^(сделай|собери)\s+(мультфильм|мультик)\s*(про\s+|о\s+)?(.+)$/i.exec(t))){
+    openTab("cartoon"); runCartoon(m[4]); return true;
+  }
+  if((m=/^(сделай|собери|сгенерируй)\s+сайт\s*(для\s+|про\s+)?(.+)$/i.exec(t))){
+    openTab("site"); runSite(m[3]); return true;
+  }
+  if(/^сделай\s+логотип\s+(.+)$/i.test(t)){
+    openTab("design"); runDesign(t.replace(/^сделай\s+логотип\s+/i,"")); return true;
+  }
+  return false;
+}
+
+window.VStudio={open:openTab,image:runImage,cartoon:runCartoon,design:runDesign,site:runSite,tryRoute:tryRoute};
+})();
+</script>
+
+<script>
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load",function(){
-    navigator.serviceWorker.register("sw.js?v=3").catch(function(){});
+    navigator.serviceWorker.register("sw.js?v=4").catch(function(){});
   });
 }
 </script>
