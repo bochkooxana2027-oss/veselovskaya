@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Веселовская — рабочий ассистент в браузере</title>
+<meta name="description" content="Рабочий ассистент прямо в браузере: точные расчёты, контент-план, промпты и раскадровки. Считает локально, без сети и без ключей.">
+<meta name="theme-color" content="#0b0d12">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="favicon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Веселовская">
+<meta property="og:title" content="Веселовская — рабочий ассистент в браузере">
+<meta property="og:description" content="Точные расчёты, контент-план, промпты и раскадровки. Работает офлайн, без регистрации.">
+<meta property="og:type" content="website">
+<style>
+:root{
+  --bg:#0b0d12; --bg2:#0f131b; --card:#141925; --line:#232a3a;
+  --txt:#e8ecf5; --dim:#98a2b8; --violet:#a78bfa; --teal:#5eead4;
+  --grad:linear-gradient(135deg,#a78bfa,#5eead4);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:radial-gradient(1100px 600px at 15% -10%,#1a1436 0%,transparent 60%),
+             radial-gradient(900px 500px at 90% 0%,#0d2b2a 0%,transparent 55%),var(--bg);
+  color:var(--txt); font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;
+  min-height:100vh; display:flex; flex-direction:column;
+}
+a{color:var(--teal)}
+.wrap{width:100%;max-width:960px;margin:0 auto;padding:0 16px}
+header.top{border-bottom:1px solid var(--line);background:rgba(11,13,18,.72);backdrop-filter:blur(8px);position:sticky;top:0;z-index:9}
+.top-in{display:flex;align-items:center;gap:12px;height:58px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px;text-decoration:none;color:var(--txt)}
+.dot{width:26px;height:26px;border-radius:9px;background:var(--grad);box-shadow:0 0 22px rgba(167,139,250,.45)}
+.badge{margin-left:auto;font-size:12px;color:var(--teal);border:1px solid #24483f;background:#0e1a18;
+  padding:5px 10px;border-radius:999px;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.badge i{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal)}
+main{flex:1;padding:22px 0 8px}
+h1{font-size:clamp(22px,4.6vw,30px);line-height:1.25;margin:0 0 8px;letter-spacing:-.3px}
+h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--dim);margin:0 0 18px;font-size:14.5px;max-width:70ch}
+#chat{display:flex;flex-direction:column;gap:14px;min-height:120px}
+.msg{display:flex;gap:10px;align-items:flex-start;animation:in .22s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.av{flex:0 0 28px;width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#0b0d12;background:var(--grad)}
+.msg.user .av{background:#242c3d;color:#c9d3e6}
+.bub{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;max-width:100%;min-width:0;flex:1}
+.msg.user .bub{background:#171d29;border-color:#2a3345}
+.bub p{margin:0 0 8px}.bub p:last-child{margin-bottom:0}
+.bub ul,.bub ol{margin:6px 0 8px;padding-left:20px}
+.bub li{margin:3px 0}
+.bub code{background:#0a1a18;color:var(--teal);padding:1px 5px;border-radius:5px;font-size:13px;word-break:break-word}
+.msg.user .bub code{background:#0f1520}
+.bub table{border-collapse:collapse;width:100%;font-size:13.5px;margin:6px 0 4px;display:block;overflow-x:auto}
+.bub th,.bub td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;white-space:nowrap}
+.bub th{color:var(--dim);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--dim)}
+.chip-skill{border:1px solid #2d3a55;background:#131a27;color:#b6c2da;border-radius:999px;padding:3px 9px}
+.honest{border-left:2px solid var(--violet);padding-left:10px;color:#b9c3d6;font-size:13.5px}
+.btn{cursor:pointer;font:inherit;border-radius:11px;border:1px solid #2b3450;background:#161d2a;color:var(--txt);
+  padding:9px 14px;transition:.15s}
+.btn:hover{border-color:var(--violet);background:#1b2233}
+.btn.sm{padding:4px 10px;font-size:12.5px;border-radius:8px;background:transparent;color:var(--dim)}
+.btn.sm:hover{color:var(--txt)}
+.btn.primary{background:var(--grad);border:0;color:#0b0d12;font-weight:700;padding:11px 18px}
+.btn.primary:disabled{opacity:.55;cursor:default}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 10px}
+.chips .btn{font-size:13px;padding:7px 12px;border-radius:999px;color:#c2ccdf}
+form.composer{display:flex;gap:10px;align-items:flex-end;position:sticky;bottom:0;padding:12px 0 16px;
+  background:linear-gradient(to top,rgba(11,13,18,.97) 55%,rgba(11,13,18,0))}
+textarea{flex:1;resize:none;min-height:50px;max-height:150px;background:var(--card);color:var(--txt);
+  border:1px solid var(--line);border-radius:13px;padding:13px 14px;font:inherit}
+textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(167,139,250,.12)}
+.hint{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#6f7a91;padding:0 2px 10px;align-items:center}
+footer{border-top:1px solid var(--line);color:var(--dim);font-size:13px;padding:16px 0 26px}
+footer .links{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px}
+footer a{color:#c6d1e6;text-decoration:none;border-bottom:1px dotted #3a465f}
+footer a:hover{color:var(--teal)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media(max-width:520px){
+  .badge{font-size:11px;padding:5px 8px}
+  .bub{padding:11px 12px}
+  .composer{gap:8px}
+  .btn.primary{padding:11px 14px}
+}
+</style>
+
+<link rel="canonical" href="https://bochkooxana2027-oss.github.io/veselovskaya/app/">
+<meta property="og:url" content="https://bochkooxana2027-oss.github.io/veselovskaya/app/">
+</head>
+<body>
+<header class="top"><div class="wrap top-in">
+  <a class="logo" href="../"><span class="dot" aria-hidden="true"></span>Веселовская</a>
+  <span class="badge" title="Все ответы считаются на вашем устройстве"><i aria-hidden="true"></i>локальный движок</span>
+</div></header>
+
+<main><div class="wrap">
+  <h1>Рабочий ассистент <span>прямо в браузере</span></h1>
+  <p class="sub">Расчёты, контент-план, промпты и раскадровки — без регистрации, без интернета и без ключей.
+     Всё выполняется на вашем устройстве: ни один запрос не уходит на сервер.</p>
+
+  <div id="chat" aria-live="polite"></div>
+
+  <div class="chips" id="chips"></div>
+
+  <form class="composer" id="form">
+    <label class="sr" for="q">Задача</label>
+    <textarea id="q" rows="1" placeholder="Например: ипотека 3 млн на 15 лет под 12% — или «контент-план на неделю про кофе»" autocomplete="off"></textarea>
+    <button class="btn primary" id="send" type="submit">Считать</button>
+  </form>
+  <div class="hint">
+    <span>Enter — отправить, Shift+Enter — новая строка</span>
+    <span>История хранится только в этом браузере</span>
+    <button class="btn sm" id="clear" type="button">очистить историю</button>
+  </div>
+</div></main>
+
+<footer><div class="wrap">
+  <div>Локальный движок: арифметика детерминированная, без модели. Ответы воспроизводимы.</div>
+  <div class="links">
+    <a href="../">Главная</a>
+    <a href="../files/">Все файлы</a>
+    <a href="../start/">Скачать и установить</a>
+  </div>
+</div></footer>
+
+<script>
+"use strict";
+/* ============================ формат чисел ============================ */
+function fmt(v){
+  if(!isFinite(v)) return "—";
+  if(Math.abs(v-Math.round(v))<1e-9){
+    return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g,"\u00a0");
+  }
+  var p=v.toFixed(2).split(".");
+  return p[0].replace(/\B(?=(\d{3})+(?!\d))/g,"\u00a0")+","+p[1];
+}
+function ru(n,one,few,many){
+  n=Math.abs(n); var k=Math.round(n*1000)/1000;
+  if(!Number.isInteger(k)) return few;
+  var a=k%100, b=k%10;
+  if(a>=11&&a<=14) return many;
+  if(b===1) return one;
+  if(b>=2&&b<=4) return few;
+  return many;
+}
+function num(raw){ return parseFloat(String(raw).replace(/[\s\u00a0]/g,"").replace(",",".")); }
+
+/* ===================== масштабы: «3 млн», «500 тыс», «50к» ===================== */
+function expandScales(t){
+  var out=String(t);
+  var groups=[[/млрд|миллиард[а-яё]*/i,1e9],[/млн|миллион[а-яё]*/i,1e6],[/тыс[а-яё]*|тысяч[а-яё]*/i,1e3]];
+  groups.forEach(function(p){
+    out=out.replace(new RegExp("(\\d[\\d\\s]*(?:[.,]\\d+)?)\\s*(?:"+p[0].source+")","gi"),function(m,g){
+      var v=parseFloat(String(g).replace(/\s/g,"").replace(",","."));
+      return isFinite(v)?" "+Math.round(v*p[1])+" ":m;
+    });
+  });
+  out=out.replace(/(^|[^\w.])(\d+(?:[.,]\d+)?)\s*[кk]\b/gi,function(m,pre,g){
+    var v=parseFloat(String(g).replace(",","."));
+    return isFinite(v)?pre+" "+Math.round(v*1000)+" ":m;
+  });
+  return out;
+}
+
+/* ==================== безопасный вычислитель выражений ==================== */
+function tokenize(s){
+  var t=[],i=0,r=/^\d+(?:[.,]\d+)?|^[a-z_]+|^[+\-*/^%()]/i,m;
+  while(i<s.length){
+    var c=s[i];
+    if(/\s/.test(c)){ i++; continue; }
+    m=s.slice(i).match(r);
+    if(!m) throw new Error("bad token");
+    t.push(m[0]); i+=m[0].length;
+  }
+  return t;
+}
+var PREC={"^":4,"*":3,"/":3,"%":3,"+":2,"-":2};
+function evalExpr(src){
+  var s=String(src).replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-");
+  if(!/^[0-9+\-*/^%(). a-z_]+$/i.test(s)) throw new Error("chars");
+  var raw=tokenize(s), out=[], ops=[];
+  var fn={sqrt:Math.sqrt,abs:Math.abs,round:Math.round,min:Math.min,max:Math.max};
+  var cnst={pi:Math.PI,e:Math.E};
+  function apply(){
+    var op=ops.pop();
+    if(op==="u-"){ out.push(-out.pop()); return; }
+    var b=out.pop(), a=out.pop();
+    if(op==="+") out.push(a+b);
+    else if(op==="-") out.push(a-b);
+    else if(op==="*") out.push(a*b);
+    else if(op==="/") out.push(a/b);
+    else if(op==="^") out.push(Math.pow(a,b));
+    else if(op==="%") out.push(a%b);
+    else throw new Error("op");
+  }
+  function fnCall(){
+    var f=ops.pop().slice(3);
+    out.push(fn[f](out.pop()));
+  }
+  var prev=null;
+  for(var i=0;i<raw.length;i++){
+    var tk=raw[i];
+    if(/^\d/.test(tk)){ out.push(parseFloat(tk.replace(",","."))); prev="n"; continue; }
+    if(/^[a-z_]+$/i.test(tk)){
+      if(fn[tk]){ ops.push("fn:"+tk); prev="f"; continue; }
+      if(cnst[tk]!==undefined){ out.push(cnst[tk]); prev="n"; continue; }
+      throw new Error("name");
+    }
+    if(tk==="("){ ops.push("("); prev="("; continue; }
+    if(tk===")"){
+      while(ops.length && ops[ops.length-1]!=="("){
+        if(String(ops[ops.length-1]).indexOf("fn:")===0) fnCall(); else apply();
+      }
+      ops.pop(); prev="n"; continue;
+    }
+    var unary=(prev===null||prev==="("||prev==="o");
+    if(unary && tk==="-"){ ops.push("u-"); prev="o"; continue; }
+    if(unary) throw new Error("unary");
+    while(ops.length){
+      var top=ops[ops.length-1];
+      if(top==="(") break;
+      if(String(top).indexOf("fn:")===0) break;
+      if(PREC[top]>=PREC[tk] && !(top==="^"&&tk==="^")) apply(); else break;
+    }
+    ops.push(tk); prev="o";
+  }
+  while(ops.length){
+    if(String(ops[ops.length-1]).indexOf("fn:")===0) fnCall(); else apply();
+  }
+  if(out.length!==1) throw new Error("expr");
+  return out[0];
+}
+
+/* ============================== расчёты ============================== */
+function calcLoan(text){
+  var m=text.toLowerCase().match(/(?:кредит|ипотек[а-яё]*|займ|заём|рассрочк[а-яё]*)[^0-9]{0,20}(\d[\d\s]*(?:[.,]\d+)?)[^0-9]{1,20}(?:на\s*)?(\d+(?:[.,]\d+)?)\s*(год[а-яё]*|лет|мес[а-яё]*|месяц[а-яё]*)[^0-9]{1,20}(?:под\s*)?(\d+(?:[.,]\d+)?)\s*%/);
+  if(!m) return null;
+  var amount=num(m[1]), term=num(m[2]), unit=m[3], rate=num(m[4]);
+  var months=(unit.indexOf("год")===0||unit.indexOf("лет")===0)?Math.round(term*12):Math.round(term);
+  if(!(months>0)||!(rate>=0)||!isFinite(amount)) return null;
+  var mr=rate/100/12;
+  var pay=mr===0?amount/months:amount*mr/(1-Math.pow(1+mr,-months));
+  var total=pay*months, over=total-amount;
+  return {html:"<p><b>Кредит "+fmt(amount)+" под "+fmt(rate)+"% на "+months+" мес.</b></p>"
+    +"<ul><li>Платёж в месяц (аннуитет): <b>"+fmt(pay)+"</b></li>"
+    +"<li>Всего выплат: "+fmt(total)+"</li>"
+    +"<li>Переплата: "+fmt(over)+" ("+fmt(over/amount*100)+"% от суммы)</li></ul>"
+    +'<p class="honest">Формула аннуитета. Страховки, комиссии банка и досрочные платежи не учтены.</p>',
+    skill:"Расчёты", note:"аннуитет"};
+}
+
+function calcPercent(text){
+  var low=text.toLowerCase(), m;
+  m=low.match(/сколько\s+процент[а-яё]*[^0-9]{0,10}(\d[\d\s]*(?:[.,]\d+)?)\s*(?:от|из)\s*(\d[\d\s]*(?:[.,]\d+)?)/);
+  if(m){
+    var part=num(m[1]), whole=num(m[2]);
+    if(whole) return {html:"<p><b>"+fmt(part)+" — это "+fmt(part/whole*100)+"% от "+fmt(whole)+".</b></p>",skill:"Расчёты"};
+  }
+  m=low.match(/на\s+сколько\s+процент[а-яё]*\s+(\d[\d\s]*(?:[.,]\d+)?)\s*(больше|меньше)\s*(\d[\d\s]*(?:[.,]\d+)?)/);
+  if(m){
+    var a=num(m[1]), w=m[2], b=num(m[3]);
+    if(b) return {html:"<p><b>"+fmt(a)+" "+w+" "+fmt(b)+" на "+fmt(Math.abs(a-b)/b*100)+"%.</b></p>",skill:"Расчёты"};
+  }
+  m=low.match(/(увеличь|уменьши|повысь|снизь)[а-яё]*\s+(\d[\d\s]*(?:[.,]\d+)?)\s*на\s*(\d+(?:[.,]\d+)?)\s*%/);
+  if(m){
+    var base=num(m[2]), pct=num(m[3]), sg=/умень|сниз/.test(m[1])?-1:1;
+    return {html:"<p>"+fmt(base)+(sg<0?" − ":" + ")+fmt(pct)+"% = <b>"+fmt(base*(1+sg*pct/100))+"</b></p>",skill:"Расчёты"};
+  }
+  m=low.match(/(^|[^\d.,])(\d[\d\s]*(?:[.,]\d+)?)\s*(минус|плюс|−|-|\+)\s*(\d+(?:[.,]\d+)?)\s*%/);
+  if(m){
+    var b2=num(m[2]), sign=(m[3]==="минус"||m[3]==="−"||m[3]==="-")?-1:1, r2=b2*(1+sign*num(m[4])/100);
+    return {html:"<p>"+fmt(b2)+(sign<0?" − ":" + ")+fmt(num(m[4]))+"% = <b>"+fmt(r2)+"</b></p>"
+      +"<ul><li>Изменение: "+(r2-b2<0?"−":"+")+fmt(Math.abs(r2-b2))+"</li></ul>",skill:"Расчёты"};
+  }
+  m=low.match(/скидк[а-яё]*\s*(\d+(?:[.,]\d+)?)\s*%?\s*на\s*(\d[\d\s]*(?:[.,]\d+)?)/);
+  if(m){
+    var p=num(m[1]), price=num(m[2]), save=price*p/100;
+    return {html:"<p><b>Скидка "+fmt(p)+"% на "+fmt(price)+"</b></p><ul><li>Итоговая цена: <b>"+fmt(price-save)
+      +"</b></li><li>Экономия: "+fmt(save)+"</li></ul>",skill:"Расчёты"};
+  }
+  m=low.match(/ндс\s*(\d+(?:[.,]\d+)?)?\s*%?\s*(?:от|на|из)\s*(\d[\d\s]*(?:[.,]\d+)?)/);
+  if(m){
+    var np=m[1]?num(m[1]):20, am=num(m[2]);
+    return {html:"<p><b>НДС "+fmt(np)+"% от "+fmt(am)+"</b></p><ul><li>НДС: <b>"+fmt(am*np/100)
+      +"</b></li><li>Сумма с НДС: "+fmt(am*(1+np/100))+"</li><li>Без НДС (если "+fmt(am)
+      +" уже с НДС): "+fmt(am/(1+np/100))+"</li></ul>",skill:"Расчёты"};
+  }
+  m=low.match(/(\d+(?:[.,]\d+)?)\s*%\s*(?:от|of)\s*(\d[\d\s]*(?:[.,]\d+)?)/);
+  if(m) return {html:"<p><b>"+fmt(num(m[1]))+"% от "+fmt(num(m[2]))+" = "+fmt(num(m[2])*num(m[1])/100)+"</b></p>",skill:"Расчёты"};
+  return null;
+}
+
+var UNITS={
+  "мм":["length",0.001],"миллиметр":["length",0.001],"см":["length",0.01],"сантиметр":["length",0.01],"сантиметры":["length",0.01],"сантиметров":["length",0.01],
+  "м":["length",1],"метр":["length",1],"метры":["length",1],"метров":["length",1],"км":["length",1000],"километр":["length",1000],"километры":["length",1000],
+  "дюйм":["length",0.0254],"дюймы":["length",0.0254],"фут":["length",0.3048],"ярд":["length",0.9144],
+  "миля":["length",1609.344],"мили":["length",1609.344],"миль":["length",1609.344],
+  "мг":["mass",1e-6],"г":["mass",0.001],"грамм":["mass",0.001],"граммы":["mass",0.001],"граммов":["mass",0.001],"кг":["mass",1],"килограмм":["mass",1],"килограммы":["mass",1],"килограммов":["mass",1],
+  "тонна":["mass",1000],"тонн":["mass",1000],"тонны":["mass",1000],"т":["mass",1000],"фунт":["mass",0.45359237],"фунты":["mass",0.45359237],"фунтов":["mass",0.45359237],"унция":["mass",0.0283495],"унции":["mass",0.0283495],"унций":["mass",0.0283495],
+  "мл":["volume",0.001],"л":["volume",1],"литр":["volume",1],"литры":["volume",1],"литров":["volume",1],"галлон":["volume",3.78541],
+  "м2":["area",1],"км2":["area",1e6],"сотка":["area",100],"гектар":["area",10000],"га":["area",10000],
+  "кб":["data",0.001],"мб":["data",1],"гб":["data",1000],"тб":["data",1e6],
+  "сек":["time",1],"секунда":["time",1],"секунды":["time",1],"минута":["time",60],"минуты":["time",60],"минут":["time",60],"мин":["time",60],"час":["time",3600],"часа":["time",3600],"часов":["time",3600],"сутки":["time",86400]
+};
+var TEMP={"c":"c","°c":"c","цельсий":"c","f":"f","°f":"f","фаренгейт":"f","k":"k","кельвин":"k"};
+function calcUnits(text){
+  var low=text.toLowerCase().replace(/°/g,"");
+  var m=low.match(/(\d[\d\s]*(?:[.,]\d+)?)\s*([a-zа-я/]+)\s*(?:в|во|->|→)\s*([a-zа-я/]+)/);
+  if(!m) return null;
+  var v=num(m[1]), src=m[2].replace(/[.,]/g,""), dst=m[3].replace(/[.,]/g,"");
+  if(TEMP[src]&&TEMP[dst]){
+    var c=v;
+    if(TEMP[src]==="f") c=(v-32)*5/9; else if(TEMP[src]==="k") c=v-273.15;
+    var outT=c;
+    if(TEMP[dst]==="f") outT=c*9/5+32; else if(TEMP[dst]==="k") outT=c+273.15;
+    var u={c:"°C",f:"°F",k:"K"},
+        tp=function(x){ return u[x]||x; };
+    return {html:"<p><b>"+fmt(v)+" "+tp(src)+" = "+fmt(outT)+" "+tp(dst)+"</b></p>",skill:"Расчёты"};
+  }
+  if(UNITS[src]&&UNITS[dst]){
+    if(UNITS[src][0]!==UNITS[dst][0])
+      return {html:"<p>Нельзя перевести "+src+" в "+dst+": разные величины.</p>",skill:"Расчёты",note:"разные величины"};
+    var out=v*UNITS[src][1]/UNITS[dst][1];
+    var one={фунт:"фунт",фунты:"фунт",фунтов:"фунт",литр:"литр",литры:"литр",литров:"литр",грамм:"грамм",граммы:"грамм",граммов:"грамм",килограмм:"килограмм",килограммы:"килограмм",килограммов:"килограмм",метр:"метр",метры:"метр",метров:"метр",километр:"километр",километры:"километр",минута:"минута",минуты:"минута",минут:"минута",сантиметр:"сантиметр",сантиметры:"сантиметр",сантиметров:"сантиметр",унция:"унция",унции:"унция",унций:"унция",тонна:"тонна",тонн:"тонна",дюйм:"дюйм",дюймы:"дюйм",секунда:"секунда",секунды:"секунда",час:"час",часа:"час",часов:"час",миля:"миля",мили:"миля",миль:"миля"}[dst];
+    var few={фунт:"фунта",фунты:"фунта",фунтов:"фунта",литр:"литра",литры:"литра",литров:"литра",грамм:"грамма",граммы:"грамма",граммов:"грамма",килограмм:"килограмма",килограммы:"килограмма",килограммов:"килограмма",метр:"метра",метры:"метра",метров:"метра",километр:"километра",километры:"километра",минута:"минуты",минуты:"минуты",минут:"минуты",сантиметр:"сантиметра",сантиметры:"сантиметра",сантиметров:"сантиметра",унция:"унции",унции:"унции",унций:"унции",тонна:"тонны",тонн:"тонны",дюйм:"дюйма",дюймы:"дюйма",секунда:"секунды",секунды:"секунды",час:"часа",часа:"часа",часов:"часа",миля:"мили",мили:"мили",миль:"мили"}[dst];
+    var many={фунт:"фунтов",фунты:"фунтов",фунтов:"фунтов",литр:"литров",литры:"литров",литров:"литров",грамм:"граммов",граммы:"граммов",граммов:"граммов",килограмм:"килограммов",килограммы:"килограммов",килограммов:"килограммов",метр:"метров",метры:"метров",метров:"метров",километр:"километров",километры:"километров",минута:"минут",минуты:"минут",минут:"минут",сантиметр:"сантиметров",сантиметры:"сантиметров",сантиметров:"сантиметров",унция:"унций",унции:"унций",унций:"унций",тонна:"тонн",тонн:"тонн",дюйм:"дюймов",дюймы:"дюймов",секунда:"секунд",секунды:"секунд",час:"часов",часа:"часов",часов:"часов",миля:"миль",мили:"миль",миль:"миль"}[dst];
+    var uni={c:"°C",f:"°F"};
+    var unit=one?ru(out,one,few,many):(uni[dst]||dst);
+    return {html:"<p><b>"+fmt(v)+" "+src+" = "+fmt(out)+" "+unit+"</b></p>",skill:"Расчёты"};
+  }
+  return null;
+}
+
+function parseDates(t){
+  var out=[],m,re1=/\b(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})\b/g,re2=/\b(\d{4})-(\d{2})-(\d{2})\b/g;
+  while((m=re1.exec(t))){
+    var d=+m[1],mo=+m[2],y=+m[3]; if(y<100) y+=2000;
+    var dt=new Date(Date.UTC(y,mo-1,d));
+    if(dt.getUTCDate()===d&&dt.getUTCMonth()===mo-1) out.push(dt);
+  }
+  while((m=re2.exec(t))){
+    var dt2=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
+    if(dt2.getUTCDate()===+m[3]) out.push(dt2);
+  }
+  return out;
+}
+function ruDate(d){
+  return String(d.getUTCDate()).padStart(2,"0")+"."+String(d.getUTCMonth()+1).padStart(2,"0")+"."+d.getUTCFullYear();
+}
+function calcDates(text){
+  var low=text.toLowerCase(), ds=parseDates(text), m;
+  if(low.indexOf("сколько")>=0 && /дн|недел|месяц/.test(low) && ds.length>=2){
+    var s=ds.slice(0,2).sort(function(a,b){ return a-b; });
+    var days=Math.round((s[1]-s[0])/86400000);
+    return {html:"<p><b>Между "+ruDate(s[0])+" и "+ruDate(s[1])+" — "+days+" дн.</b></p>"
+      +"<p>Это ≈ "+String((days/7).toFixed(1)).replace(".",",")+" нед. или ≈ "
+      +String((days/30.44).toFixed(1)).replace(".",",")+" мес.</p>",skill:"Расчёты"};
+  }
+  m=low.match(/(через|плюс)\s*(\d+)\s*(дн[а-яё]*|недел[а-яё]*|мес[а-яё]*|год[а-яё]*|лет)/);
+  if(m&&ds.length){
+    var n=+m[2], u=m[3], d0=ds[0], ms;
+    if(u.indexOf("дн")===0) ms=n*86400000;
+    else if(u.indexOf("недел")===0) ms=n*7*86400000;
+    else if(u.indexOf("мес")===0) ms=Math.round(n*30.44)*86400000;
+    else ms=Math.round(n*365.25)*86400000;
+    return {html:"<p><b>"+ruDate(d0)+" + "+n+" "+u+" = "+ruDate(new Date(d0.getTime()+ms))+"</b></p>",skill:"Расчёты"};
+  }
+  return null;
+}
+
+function calcPlain(text){
+  var low=text.toLowerCase();
+  var cleaned=low.replace(/(посчитай|вычисли|сколько будет|сколько|равно|ответ|калькулятор|:)/g," ").trim().replace(/[?!.]+$/,"");
+  if(!cleaned || !/\d/.test(cleaned)) return null;
+  if(!/^[\d\s+\-*/().,%^×÷]+$/.test(cleaned)) return null;
+  var v;
+  try{ v=evalExpr(cleaned); }catch(e){ return null; }
+  var pretty=cleaned.replace(/\*/g,"×").replace(/\//g,"÷").replace(/\s+/g," ").trim();
+  return {html:"<p><b>"+pretty+" = "+fmt(v)+"</b></p>",skill:"Расчёты",note:"посчитано точно, не моделью"};
+}
+
+/* ============================== контент-план ============================== */
+var RUBRICS=[
+  ["Польза","разбор частой ошибки","Сохраните, чтобы не наступить"],
+  ["Вовлечение","вопрос подписчикам","Ответьте одним словом"],
+  ["Экспертиза","кейс с цифрами","Напишите «разбор» — пришлю шаблон"],
+  ["Личное","за кулисами работы","Поддержите, если знакомо"],
+  ["Продажа","оффер с ограничением по времени","Напишите в личку «хочу»"],
+  ["Польза","чек-лист из 5 пунктов","Скачайте в закрепе"],
+  ["Новость","что нового у нас","Задайте вопрос в комментариях"]
+];
+var TIMES={telegram:["09:30","19:00"],instagram:["12:00","20:00"],vk:["09:00","18:00"],linkedin:["08:30","17:30"],tiktok:["18:00","21:00"]};
+var WD=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+
+function parseDays(t){
+  var low=t.toLowerCase(), m=low.match(/(?:на|за)\s*(\d+)\s*(дн[а-яё]*|недел[а-яё]*|мес[а-яё]*)/);
+  if(m){
+    var n=+m[1], u=m[2];
+    if(u.indexOf("недел")===0) return Math.min(n*7,90);
+    if(u.indexOf("мес")===0) return Math.min(n*30,90);
+    return Math.max(1,Math.min(n,90));
+  }
+  if(low.indexOf("месяц")>=0) return 30;
+  return 7;
+}
+function parsePlatform(t){
+  var low=t.toLowerCase();
+  var map=[["instagram","instagram"],["инстаграм","instagram"],["telegram","telegram"],["телеграм","telegram"],
+    ["вконтакте","vk"],["vk","vk"],["linkedin","linkedin"],["tiktok","tiktok"],["тикток","tiktok"]];
+  for(var i=0;i<map.length;i++) if(low.indexOf(map[i][0])>=0) return map[i][1];
+  return "telegram";
+}
+function parseNiche(t){
+  var x=t.replace(/контент[- ]?план[а-яё]*|на\s+\d+\s*(дн[а-яё]*|недел[а-яё]*|мес[а-яё]*)|на\s+(неделю|месяц)/gi," ")
+    .replace(/(^|\s)(для|по|тема|тематика|про)(?=\s|$)/gi," ")
+    .replace(/(^|\s)(в|во)\s+(телеграм[а-яё]*|telegram|инстаграм[а-яё]*|instagram|вконтакте|vk|tiktok|тикток|linkedin)(?=\s|$)/gi," ")
+    .replace(/(^|\s)(телеграм[а-яё]*|telegram|инстаграм[а-яё]*|instagram|вконтакте|vk|tiktok|тикток|linkedin)(?=\s|$)/gi," ")
+    .replace(/^(составь|сделай|создай|нужен|нужна|придумай|подготовь)\s+/i,"")
+    .replace(/\s+/g," ").replace(/^[\s.,\-—]+|[\s.,\-—]+$/g,"");
+  return x||"ваш проект";
+}
+function contentPlan(text){
+  if(!/контент[- ]?план|план\s+публикац|что\s+публиковать|рубрик/i.test(text)) return null;
+  var days=parseDays(text), plat=parsePlatform(text), niche=parseNiche(text);
+  var start=new Date(); start.setUTCHours(0,0,0,0);
+  var t=TIMES[plat]||TIMES.telegram, rows=[];
+  var csv=[["Дата","День","Рубрика","Тема","Формат","Время","Призыв","Площадка","Ниша"]];
+  for(var i=0;i<days;i++){
+    var d=new Date(start.getTime()+i*86400000), rb=RUBRICS[i%RUBRICS.length];
+    var date=String(d.getUTCDate()).padStart(2,"0")+"."+String(d.getUTCMonth()+1).padStart(2,"0");
+    var wd=WD[(d.getUTCDay()+6)%7];
+    var form=i%3===0?"пост + картинка":(i%3===1?"короткий пост":"карусель / подборка");
+    var time=(i%2===0?t[0]:t[1]);
+    var theme=niche+": "+rb[1];
+    rows.push([date,wd,rb[0],theme,time]);
+    csv.push([date,wd,rb[0],theme,form,time,rb[2],plat,niche]);
+  }
+  var tags=niche.split(/\s+/).filter(function(w){ return w.length>2; }).slice(0,4)
+    .map(function(w){ return "#"+w.toLowerCase().replace(/[^\wа-яё]/gi,""); });
+  var html="<p><b>Контент-план на "+days+" дн. · "+niche+" · "+plat+"</b></p>"
+    +"<table><thead><tr><th>Дата</th><th>День</th><th>Рубрика</th><th>Тема</th><th>Время</th></tr></thead><tbody>"
+    +rows.map(function(r){ return "<tr><td>"+r[0]+"</td><td>"+r[1]+"</td><td>"+r[2]+"</td><td>"+r[3]+"</td><td>"+r[4]+"</td></tr>"; }).join("")
+    +"</tbody></table>"
+    +"<p>Хэштеги: "+tags.join(" ")+"</p>"
+    +'<p class="honest">Рубрики распределены алгоритмически: пять полезных постов на один продающий. Даты — от сегодняшнего дня.</p>';
+  return {html:html,skill:"Соцсети",csv:csv,csvName:"content-plan-"+days+"d.csv",note:days+" дн., "+plat};
+}
+
+/* ============================ промпт для картинки ============================ */
+function imagePrompt(text){
+  if(!/промпт|промт|запрос для (картинк|изображен|нейросет)|сгенерируй (картинк|изображен)|нарисуй/i.test(text)) return null;
+  var subj=text.replace(/(напиши|сделай|составь|сгенерируй|создай|дай|нужен)?\s*(промпт|промт)[а-яё]*/gi," ")
+    .replace(/для\s+(генерации\s+)?(картинк[а-яё]*|изображени[а-яё]*|нейросет[а-яё]*|midjourney|kling|dall-?e|flux)/gi," ")
+    .replace(/^\s*(про|для|на)\s+/i,"").replace(/\s+/g," ").trim().replace(/^[.,\-—:]+|[\s.,\-—:]+$/g,"")
+    ||"ваш продукт";
+  var tpl=[
+    ["Объект",subj+", в фокусе"],
+    ["Окружение","нейтральный фон с лёгкой глубиной, без визуального шума"],
+    ["Свет","мягкий рассеянный свет сбоку, тёплые отблески"],
+    ["Камера","50 мм, f/2.0, малая глубина резкости, уровень глаз"],
+    ["Стиль","фотография продукта, чистая композиция, естественные цвета"],
+    ["Качество","8k, детализация материала, без артефактов и текста на изображении"]
+  ];
+  var line=tpl.map(function(r){ return r[1]; }).join(", ");
+  return {html:"<p><b>Промпт для генерации изображения</b></p><table><tbody>"
+    +tpl.map(function(r){ return "<tr><th>"+r[0]+"</th><td>"+r[1]+"</td></tr>"; }).join("")
+    +"</tbody></table><p>Готовой строкой:</p><p><code>"+line+"</code></p>"
+    +"<p>Negative prompt: <code>text, watermark, logo, blurry, oversaturated, plastic skin</code></p>"
+    +'<p class="honest">Промпт собран по схеме «объект → свет → камера → стиль». Саму картинку генерирует модель — здесь только задание для неё.</p>',
+    skill:"Медиа",note:"структура промпта"};
+}
+
+/* ============================== раскадровка ============================== */
+function storyboard(text){
+  if(!/раскадровк|сториборд|сценар\w*\s+(ролик|видео)|ролик|reels|рилс/i.test(text)) return null;
+  var m=text.toLowerCase().match(/(\d+)\s*(сек|минут|мин)/);
+  var dur=m?(/мин/.test(m[2])?+m[1]*60:+m[1]):15;
+  dur=Math.max(6,Math.min(dur,120));
+  var subj=text.replace(/(сделай|сгенерируй|создай|нужен|нужно|хочу)/gi," ")
+    .replace(/(раскадровк[а-яё]*|сториборд[а-яё]*|сценари[а-яё]*|видео|ролик|клип|reels|рилс|сторис|промо)/gi," ")
+    .replace(/\d+\s*(сек[а-яё]*|минут[а-яё]*|мин)/gi," ").replace(/^\s*(про|для|на)\s+/i,"")
+    .replace(/\s+/g," ").trim().replace(/^[.,\-—:]+|[\s.,\-—:]+$/g,"")||"продукт";
+  var n=Math.max(3,Math.min(6,Math.round(dur/3)));
+  var beats=[
+    ["общий план","медленный наезд","объект «"+subj+"» узнаётся с первой секунды"],
+    ["деталь","макро, ручная камера","фактура и материал: видно, из чего сделано"],
+    ["действие","слежение за движением","человек пользуется — без постановки"],
+    ["акцент","фикс, малая глубина","эмоция, взгляд, живой момент"],
+    ["финал","плавный отъезд","объект на чистом фоне — место под логотип"]
+  ];
+  var per=dur/n, rows=[], t0=0;
+  for(var i=0;i<n;i++){
+    var b=beats[i%beats.length], t1=Math.min(dur,Math.round((t0+per)*10)/10);
+    rows.push([String(t0.toFixed(1)).replace(".",",")+"–"+String(t1.toFixed(1)).replace(".",",")+" с",b[0],b[1],b[2]]);
+    t0=t1;
+  }
+  var vo=Math.round(dur*14);
+  return {html:"<p><b>Раскадровка · "+dur+" с · "+n+" сцен</b></p>"
+    +"<table><thead><tr><th>Время</th><th>План</th><th>Камера</th><th>Смысл кадра</th></tr></thead><tbody>"
+    +rows.map(function(r){ return "<tr><td>"+r[0]+"</td><td>"+r[1]+"</td><td>"+r[2]+"</td><td>"+r[3]+"</td></tr>"; }).join("")
+    +"</tbody></table><ul><li>Озвучка: до "+vo+" знаков (≈14 знаков/с при нормальном темпе).</li>"
+    +"<li>Музыка: ровный ритм 90–110 BPM, без вокала под речью.</li>"
+    +"<li>Титры: не мельче 1/12 высоты кадра и живут не меньше 1,5 с.</li></ul>"
+    +'<p class="honest">Тайминги рассчитаны: сумма сцен равна длительности ролика.</p>',
+    skill:"Медиа",note:dur+" с, "+n+" сцен"};
+}
+
+/* ========================== каркас текста (честный) ========================== */
+function textSkeleton(text){
+  if(!/напиши|письмо|пост|статья|статью|текст|описани|заголовк|слоган|объявлени|резюме/i.test(text)) return null;
+  var low=text.toLowerCase();
+  var kind=/письмо/.test(low)?"письмо":(/статья|статью/.test(low)?"статья":(/пост/.test(low)?"пост":"текст"));
+  var topic=parseNiche(text.replace(/напиши|письмо|статью|статья|пост|текст|описани[а-яё]*|заголовк[а-яё]*|слоган/gi," "));
+  return {html:"<p><b>Каркас: "+kind+" — "+topic+"</b></p>"
+    +"<ol><li><b>Заход (одно предложение).</b> Факт или ситуация, знакомая читателю.</li>"
+    +"<li><b>Проблема.</b> Что именно болит и почему это важно сейчас.</li>"
+    +"<li><b>Решение.</b> Ваш подход в двух-трёх шагах.</li>"
+    +"<li><b>Доказательство.</b> Цифра, кейс или деталь, которую нельзя выдумать.</li>"
+    +"<li><b>Действие.</b> Один конкретный следующий шаг.</li></ol>"
+    +"<p>Тон: абзацы по 2–4 строки, без канцелярита и без «в современном мире».</p>"
+    +'<p class="honest">Это каркас, а не готовый текст: живой язык пишет модель в приложении с вашим ключом. Здесь я не подделываю результат и не выдаю шаблон за статью.</p>',
+    skill:"Текст",note:"каркас, не текст"};
+}
+
+/* ============================== маршрутизация ============================== */
+var FALLBACK="<p>Не разобрала задачу. Что я делаю здесь, в браузере:</p><ul>"
+ +"<li><code>15% от 4800</code> · <code>скидка 30% на 5000</code> · <code>НДС 20 от 100000</code></li>"
+ +"<li><code>кредит 500000 на 3 года под 15%</code> · <code>ипотека 3 млн на 15 лет под 12%</code></li>"
+ +"<li><code>12 км в мили</code> · <code>5 кг в фунты</code> · <code>98.6 f в c</code></li>"
+ +"<li><code>сколько дней между 01.01.2026 и 15.03.2026</code> · <code>через 45 дней от 01.06.2026</code></li>"
+ +"<li><code>(1200*1.2-300)/3</code> · <code>3 млн плюс 8%</code></li>"
+ +"<li><code>контент-план на неделю про кофе в телеграм</code></li>"
+ +"<li><code>раскадровка 15 сек про кроссовки</code> · <code>промпт для картинки: керамическая кружка</code></li></ul>"
+ +'<p class="honest">Свободный текст, разбор документов и работа с вашими файлами — это приложение на компьютере. Здесь считается только то, что можно посчитать точно.</p>';
+
+function answer(raw){
+  var text=expandScales(String(raw).trim()), r;
+  var chain=[contentPlan,storyboard,imagePrompt];
+  for(var i=0;i<chain.length;i++){ r=chain[i](raw); if(r) return r; }
+  var calcs=[calcLoan,calcPercent,calcUnits,calcDates,calcPlain];
+  for(var j=0;j<calcs.length;j++){ r=calcs[j](text); if(r) return r; }
+  r=textSkeleton(raw); if(r) return r;
+  return {html:FALLBACK,skill:"Помощь",note:"не распознала",ok:false};
+}
+
+/* ================================ интерфейс ================================ */
+var chat=document.getElementById("chat"), form=document.getElementById("form"),
+    q=document.getElementById("q"), sendBtn=document.getElementById("send"),
+    chipsEl=document.getElementById("chips"), clearBtn=document.getElementById("clear");
+var KEY="veselovskaya-web-v1", hist=[];
+
+var EXAMPLES=[
+  "ипотека 3 млн на 15 лет под 12%",
+  "15% от 4800",
+  "скидка 30% на 5000",
+  "4 200 минус 7%",
+  "НДС 20 от 100000",
+  "12 км в мили",
+  "сколько дней между 01.01.2026 и 15.03.2026",
+  "контент-план на неделю про кофе в телеграм",
+  "раскадровка 15 сек про кроссовки",
+  "промпт для картинки: керамическая кружка"
+];
+EXAMPLES.forEach(function(ex){
+  var b=document.createElement("button");
+  b.type="button"; b.className="btn"; b.textContent=ex;
+  b.onclick=function(){ q.value=ex; submit(); };
+  chipsEl.appendChild(b);
+});
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function bubble(who,html,meta){
+  var d=document.createElement("div");
+  d.className="msg "+who;
+  var av=document.createElement("div"); av.className="av"; av.textContent=who==="user"?"Вы":"В";
+  var b=document.createElement("div"); b.className="bub"; b.innerHTML=html;
+  if(meta){
+    var m=document.createElement("div"); m.className="meta";
+    if(meta.skill){
+      var s=document.createElement("span"); s.className="chip-skill"; s.textContent="навык: "+meta.skill; m.appendChild(s);
+    }
+    if(meta.note){ var n=document.createElement("span"); n.textContent=meta.note; m.appendChild(n); }
+    var cp=document.createElement("button");
+    cp.type="button"; cp.className="btn sm"; cp.textContent="скопировать";
+    cp.onclick=function(){
+      copyText(b.innerText).then(function(){
+        cp.textContent="скопировано";
+        setTimeout(function(){ cp.textContent="скопировать"; },1400);
+      }).catch(function(){
+        cp.textContent="браузер не разрешил";
+        setTimeout(function(){ cp.textContent="скопировать"; },1800);
+      });
+    };
+    m.appendChild(cp);
+    if(meta.csv){
+      var dl=document.createElement("button");
+      dl.type="button"; dl.className="btn sm"; dl.textContent="скачать CSV";
+      dl.onclick=function(){ downloadCsv(meta.csv,meta.csvName); };
+      m.appendChild(dl);
+    }
+    b.appendChild(m);
+  }
+  d.appendChild(av); d.appendChild(b);
+  chat.appendChild(d);
+  return d;
+}
+
+function legacyCopy(t){
+  return new Promise(function(res,rej){
+    var ta=document.createElement("textarea");
+    ta.value=t; ta.setAttribute("readonly","");
+    ta.style.position="fixed"; ta.style.top="-1000px";
+    document.body.appendChild(ta); ta.select();
+    var ok=false;
+    try{ ok=document.execCommand("copy"); }catch(e){ ok=false; }
+    ta.remove();
+    ok?res():rej(new Error("copy"));
+  });
+}
+function copyText(t){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(t).catch(function(){ return legacyCopy(t); });
+  }
+  return legacyCopy(t);
+}
+function downloadCsv(rows,name){
+  var csv=rows.map(function(r){
+    return r.map(function(c){
+      var s=String(c);
+      return /[",;\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+    }).join(";");
+  }).join("\r\n");
+  var blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
+}
+
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(hist.slice(-40))); }catch(e){} }
+function restore(){
+  try{
+    var raw=localStorage.getItem(KEY); if(!raw) return;
+    hist=JSON.parse(raw)||[];
+    hist.forEach(function(h){ bubble(h.who,h.html,h.meta); });
+  }catch(e){}
+}
+
+function submit(){
+  var text=q.value.trim();
+  if(!text) return;
+  q.value=""; q.style.height="auto";
+  var userHtml=esc(text).replace(/\n/g,"<br>");
+  bubble("user",userHtml);
+  hist.push({who:"user",html:userHtml});
+  sendBtn.disabled=true;
+  setTimeout(function(){
+    var r;
+    try{ r=answer(text); }
+    catch(e){ r={html:"<p>Внутренняя ошибка разбора. Попробуйте переформулировать.</p>",skill:"Сбой",ok:false}; }
+    var meta={skill:r.skill,note:r.note,csv:r.csv,csvName:r.csvName};
+    bubble("bot",r.html,meta);
+    hist.push({who:"bot",html:r.html,meta:meta});
+    save(); sendBtn.disabled=false; q.focus();
+    chat.lastElementChild.scrollIntoView({block:"nearest",behavior:"smooth"});
+  },140);
+}
+
+form.addEventListener("submit",function(e){ e.preventDefault(); submit(); });
+q.addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); submit(); }
+});
+q.addEventListener("input",function(){
+  q.style.height="auto"; q.style.height=Math.min(q.scrollHeight,150)+"px";
+});
+clearBtn.addEventListener("click",function(){
+  chat.innerHTML=""; hist=[]; save();
+  bubble("bot",'<p>История очищена. Всё по-прежнему считается на вашем устройстве.</p>',{skill:"Система"});
+});
+
+restore();
+if(!hist.length){
+  bubble("bot",
+    '<p><b>Здравствуйте. Я считаю то, что можно посчитать точно</b> — и не выдумываю остальное.</p>'
+    +"<ul><li>Кредиты и ипотека по формуле аннуитета, проценты, скидки, НДС, единицы, даты.</li>"
+    +"<li>Контент-план с датами и рубриками — таблицей, плюс CSV.</li>"
+    +"<li>Раскадровка с таймингами и промпт для генерации изображения.</li></ul>"
+    +'<p class="honest">Страница работает целиком в браузере: без сети, без аккаунта, без ключей. Нажмите пример ниже или введите свою задачу.</p>',
+    {skill:"Знакомство"});
+}
+</script>
+<script>
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+</script>
+</body>
+</html>

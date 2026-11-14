@@ -1,0 +1,14 @@
+{
+  "name": "Веселовская — ассистент в браузере",
+  "short_name": "Веселовская",
+  "description": "Точные расчёты, контент-план, промпты и раскадровки. Работает локально, без сети и ключей.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "lang": "ru",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

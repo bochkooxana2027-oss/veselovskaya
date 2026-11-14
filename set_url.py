@@ -45,9 +45,19 @@ def main():
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>{base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>{base}/files/</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>{base}/app/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 </urlset>
 '''
     (ROOT / "sitemap.xml").write_text(sitemap, encoding="utf-8")
+
+    app = ROOT / "app" / "index.html"
+    if app.exists():
+        a = app.read_text(encoding="utf-8")
+        a = re.sub(r'\n<link rel="canonical"[^>]*>', "", a)
+        a = re.sub(r'\n<meta property="og:url"[^>]*>', "", a)
+        a = a.replace("</head>", f'\n<link rel="canonical" href="{base}/app/">'
+                                f'\n<meta property="og:url" content="{base}/app/">\n</head>', 1)
+        app.write_text(a, encoding="utf-8")
 
     rob = ROOT / "robots.txt"
     text = rob.read_text(encoding="utf-8")
