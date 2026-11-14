@@ -239,8 +239,8 @@ form.composer #micBtn.rec{color:#0b0d12;background:var(--teal);border-color:tran
   <div class="panel" id="p-cartoon">
     <h2>Мультфильм из кадров</h2>
     <p class="pnote">Модель придумывает историю и раскадровку, потом я рисую кадры по очереди.
-      <b>Обычно кадр рисуется 5–20 секунд</b>, в час пик — до минуты: приложение само переключается между движками,
-      поэтому три кадра — это примерно полминуты, а не «зависло». Готовые кадры остаются на месте, даже если один не вышел: появится кнопка «продолжить».
+      С включённым быстрым движком <b>кадр выходит за 5–20 секунд</b>. Если он занят, приложение само переходит на бесплатный поток —
+      там кадр раз в ~45 секунд, и я покажу, сколько осталось. Готовые кадры остаются на месте, даже если один не вышел: появится кнопка «продолжить».
       Видео собирается здесь же. Вкладку не закрывайте, пока идёт рисование.</p>
     <textarea id="ctp" placeholder="например: лисёнок учится кататься на скейте во дворе, добрая история"></textarea>
     <div class="pgrid">
@@ -1617,6 +1617,7 @@ function recordFrames(urls,secPer,W,H,onProgress){
       function finish(blob,err){
         if(settled) return;
         settled=true;
+        if(iv){ clearInterval(iv); iv=0; }
         timers.forEach(clearTimeout);
         try{ stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
         if(err||!blob||!blob.size) rej(err||new Error("запись вышла пустой — попробуйте ещё раз"));
@@ -1625,25 +1626,45 @@ function recordFrames(urls,secPer,W,H,onProgress){
       rec.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
       rec.onstop=function(){ finish(new Blob(chunks,{type:(rec.mimeType||mt||"video/webm")})); };
       rec.onerror=function(e){ finish(null,new Error("ошибка записи: "+((e&&e.error&&e.error.name)||"unknown"))); };
-      var total=imgs.length*secPer, last=-1;
-      ctx.fillStyle="#0b0d12"; ctx.fillRect(0,0,W,H);
-      drawCover(ctx,imgs[0],W,H);
-      try{ rec.start(200); }catch(e){ return finish(null,new Error("запись не стартовала: "+(e&&e.message||""))); }
-      // страховка: если запись не остановилась сама — будим
+      var total=imgs.length*secPer, cur=-1, iv=0, stopping=false;
+      // Каждый кадр держится secPer секунд. Холст перерисовываем ~25 раз в секунду:
+      // captureStream выдаёт кадр только при отрисовке, и если рисовать лишь при смене
+      // картинки, видео получалось коротким, а последний кадр мелькал один миг.
+      function paint(t){
+        var idx=Math.min(imgs.length-1,Math.max(0,Math.floor(t/secPer)));
+        if(idx===cur) return;
+        cur=idx;
+        ctx.fillStyle="#0b0d12"; ctx.fillRect(0,0,W,H);
+        drawCover(ctx,imgs[idx],W,H);
+      }
+      function repaint(){
+        if(cur<0) return;
+        // повторная отрисовка того же кадра всё равно даёт новый кадр в записи,
+        // поэтому тайм-коды идут ровно, без провалов.
+        ctx.fillStyle="#0b0d12"; ctx.fillRect(0,0,W,H);
+        drawCover(ctx,imgs[cur],W,H);
+      }
+      function stopNow(){
+        if(settled||stopping) return;
+        stopping=true;
+        if(iv){ clearInterval(iv); iv=0; }
+        // держим последний кадр ещё чуть-чуть, чтобы видео не обрывалось на нём
+        setTimeout(function(){ try{ rec.stop(); }catch(e){} }, 300);
+      }
+      paint(0);
+      try{ rec.start(250); }catch(e){ return finish(null,new Error("запись не стартовала: "+(e&&e.message||""))); }
+      // страховки: если цикл почему-то встал — запись всё равно завершится
       timers.push(setTimeout(function(){ try{ rec.requestData(); }catch(e){} }, Math.max(4000,total*1000*0.6)));
-      timers.push(setTimeout(function(){ try{ rec.stop(); }catch(e){} }, (total+20)*1000));
+      timers.push(setTimeout(stopNow, (total+25)*1000));
       var t0=performance.now();
-      (function tick(){
-        if(settled) return;
+      iv=setInterval(function(){
+        if(settled){ clearInterval(iv); iv=0; return; }
         var t=(performance.now()-t0)/1000;
-        if(t>=total){ try{ rec.stop(); }catch(e){} return; }
-        var idx=Math.min(imgs.length-1,Math.floor(t/secPer));
-        if(idx!==last){ last=idx; ctx.fillStyle="#0b0d12"; ctx.fillRect(0,0,W,H); drawCover(ctx,imgs[idx],W,H); }
+        if(t>=total){ stopNow(); return; }
+        paint(t); repaint();
         if(onProgress) onProgress(Math.min(t,total),total);
-        // таймер, а не requestAnimationFrame: в фоновой вкладке rAF замирает и видео
-        // получается обрезанным. Таймер идёт всегда, поэтому запись всегда доходит до конца.
-        timers.push(setTimeout(tick, 33));
-      })();
+      }, 40);
+      // интервал, а не requestAnimationFrame: в фоновой вкладке rAF замирает
     }
 
     urls.forEach(function(u,i){
@@ -1709,6 +1730,12 @@ function ctEta(done,total,secPer){
   var left=Math.round((total-done)*secPer/60);
   return left<=1?"меньше минуты":(left+" мин");
 }
+function ctLeft(done,total,avg){
+  if(!avg) return "обычно 5–20 секунд на кадр";
+  var left=Math.max(0,Math.round((total-done)*avg));
+  if(left<60) return "осталось примерно "+left+" с";
+  return "осталось примерно "+Math.round(left/60)+" мин";
+}
 function ctResumeBtn(label,fn){
   var wrap=document.createElement("div"); wrap.className="rowbtns"; wrap.style.margin="0 0 12px";
   var b=document.createElement("button"); b.type="button"; b.className="btn"; b.textContent=label;
@@ -1721,6 +1748,7 @@ function ctDraw(){
   var plan=CT.plan, n=plan.scenes.length, secPer=CT.secPer||22;
   CT.busy=true; btn.disabled=true;
   var i=CT.next||0;
+  if(CT.seed==null) CT.seed=Math.floor(Math.random()*1e6);
   (function step(){
     if(i>=n){
       CT.busy=false; btn.disabled=false; CT.next=0;
@@ -1731,12 +1759,15 @@ function ctDraw(){
     }
     var sc=plan.scenes[i];
     stat.className="pstat";
-    stat.textContent="рисую кадр "+(i+1)+" из "+n+" · осталось примерно "+ctEta(i,n,secPer);
+    stat.textContent="рисую кадр "+(i+1)+" из "+n+" · "+ctLeft(i,n,CT.avg);
     ctBar(i,n);
     var prompt=sc.prompt+", consistent character and style, "+plan.style+", без текста и водяных знаков";
+    var tf=Date.now();
     genImage(prompt,1024,576,function(t){
       stat.textContent="кадр "+(i+1)+"/"+n+" · "+t;
-    },{deadline:CT.budget||540000}).then(function(r){
+    },{deadline:CT.budget||540000,seed:CT.seed}).then(function(r){
+      var dur=(Date.now()-tf)/1000;
+      if(dur>2&&dur<180) CT.avg=CT.avg?Math.round(CT.avg*0.45+dur*0.55):Math.round(dur);
       CT.frames.push({url:r.url,blob:r.blob,caption:sc.caption});
       i++; CT.next=i;
       ctBar(i,n);
@@ -1760,7 +1791,7 @@ function ctDraw(){
 function ctPlainScenes(idea,n,style){
   var sc=[];
   for(var i=0;i<n;i++){
-    sc.push({caption:"Кадр "+(i+1),prompt:idea+", scene "+(i+1)+" of "+n+", same character throughout, "+style});
+    sc.push({caption:"Кадр "+(i+1),prompt:"Same hero in every frame, same setting and lighting. "+idea+", scene "+(i+1)+" of "+n+", only the action changes, "+style});
   }
   return sc;
 }
@@ -1797,17 +1828,19 @@ function runCartoon(preset,resume){
   if(!idea){ stat.className="pstat err"; stat.textContent="Опишите сюжет в двух словах."; return; }
   var n=parseInt(el("ctn").value,10)||3, style=el("ctst").value;
   if(n===1) n=3;
-  btn.disabled=true; CT.blob=null; CT.busy=true; CT.plan=null; CT.next=0; CT.frames=[];
+  btn.disabled=true; CT.blob=null; CT.busy=true; CT.plan=null; CT.next=0; CT.frames=[]; CT.seed=Math.floor(Math.random()*1e6);
   if(!CT.budget) CT.budget=540000;
-  CT.secPer=22;
+  CT.secPer=22; CT.avg=0;
   el("ctplayer").style.display="none"; el("ctctrl").style.display="none"; el("ctout").innerHTML="";
   ctBar(0,n);
   stat.className="pstat"; stat.textContent="придумываю раскадровку · примерно "+ctEta(0,n,CT.secPer);
   var msgs=[
     {role:"system",content:"Ты — режиссёр коротких мультфильмов. Отвечай только JSON-массивом, без markdown и пояснений."},
     {role:"user",content:"Идея: "+idea+"\nСтиль: "+style+"\nСделай ровно "+n+" последовательных кадра одной истории."
-      +" Формат: [{\"caption\":\"короткая подпись по-русски\",\"prompt\":\"подробное описание кадра по-английски для генератора изображений: тот же герой, та же сцена, что и в других кадрах\"}]."
-      +" Описания должны быть визуальными и конкретными, герой одинаковый во всех кадрах."}
+      +" Формат: [{\"caption\":\"короткая подпись по-русски\",\"prompt\":\"подробное описание кадра по-английски для генератора изображений\"}]."
+      +" Сначала придумай героя и опиши его по-английски одним и тем же набором слов: вид, окрас, одежда, возраст."
+      +" Каждый prompt начинай с этого дословно повторённого описания героя, затем добавляй, что он делает в этом кадре."
+      +" Обстановку и стиль описывай одинаково во всех кадрах, меняется только действие."}
   ];
   textCall(msgs,{maxTokens:900,temperature:.8},function(t){ stat.textContent=t; })
     .then(function(txt){
