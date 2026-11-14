@@ -889,14 +889,14 @@ function enqueue(fn){
   return run;
 }
 
-function askModel(text){
-  var ph=bubble("bot",'<p class="typing"><i></i><i></i><i></i> думаю</p>',{skill:"Модель",note:PROVIDERS[cfg.provider]?PROVIDERS[cfg.provider].name:""});
+function askModel(text,prior){
+  var ph=bubble("bot",'<p class="typing"><i></i><i></i><i></i> думаю</p>',{skill:"Модель",note:freeMode()?"бесплатно":(PROVIDERS[cfg.provider]||{}).name});
   var msgs=[{role:"system",content:SYSTEM}];
-  hist.slice(-9).forEach(function(h){
+  (prior||hist).slice(-9).forEach(function(h){
     var t=plain(h.html); if(!t) return;
     msgs.push({role:h.who==="user"?"user":"assistant",content:t});
   });
-  if(!msgs.some(function(m){return m.role==="user";})) msgs.push({role:"user",content:text});
+  msgs.push({role:"user",content:text});
   enqueue(function(){ return retryCall(msgs, freeMode()?3:2, ph); }).then(function(out){
     var html=mdToHtml(out||"(пустой ответ)");
     ph.bub.innerHTML=html;
@@ -911,8 +911,7 @@ function askModel(text){
   });
 }
 
-var busy=false;
-function done(){ busy=false; sendBtn.disabled=false; q.focus();
+function done(){ q.focus();
   var last=chat.lastElementChild; if(last) last.scrollIntoView({block:"nearest",behavior:"smooth"}); }
 function finish(r){
   var meta={skill:r.skill,note:r.note,csv:r.csv,csvName:r.csvName};
@@ -922,17 +921,17 @@ function finish(r){
 }
 function submit(){
   var text=q.value.trim();
-  if(!text||busy) return;
-  busy=true; sendBtn.disabled=true;
+  if(!text) return;
   q.value=""; q.style.height="auto";
   var userHtml=esc(text).replace(/\n/g,"<br>");
+  var prior=hist.slice();
   bubble("user",userHtml);
   hist.push({who:"user",html:userHtml});
   var r;
   try{ r=answer(text); }
   catch(e){ r={html:"<p>Внутренняя ошибка разбора. Попробуйте переформулировать.</p>",skill:"Сбой",ok:false}; }
   setTimeout(function(){
-    if((r.ok===false||r.route==="model") && cfgReady()) askModel(text);
+    if((r.ok===false||r.route==="model") && cfgReady()) askModel(text,prior);
     else finish(r);
   },110);
 }
