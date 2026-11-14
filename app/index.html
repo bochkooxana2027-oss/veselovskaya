@@ -187,9 +187,6 @@ form.composer #micBtn.rec{color:#0b0d12;background:var(--teal);border-color:tran
 @media(max-width:520px){form.composer #micBtn{padding:0 10px;font-size:12px}}
 .saynote{font-size:12px;color:#6f7a91;margin:6px 0 0;line-height:1.5}
 </style>
-
-<link rel="canonical" href="https://bochkooxana2027-oss.github.io/veselovskaya/app/">
-<meta property="og:url" content="https://bochkooxana2027-oss.github.io/veselovskaya/app/">
 </head>
 <body>
 <header class="top"><div class="wrap top-in">
@@ -242,8 +239,8 @@ form.composer #micBtn.rec{color:#0b0d12;background:var(--teal);border-color:tran
   <div class="panel" id="p-cartoon">
     <h2>Мультфильм из кадров</h2>
     <p class="pnote">Модель придумывает историю и раскадровку, потом я рисую кадры по очереди.
-      <b>Бесплатный режим даёт примерно один кадр в минуту</b>: три кадра — это 2–4 минуты ожидания, и это нормально.
-      Готовые кадры остаются на месте, даже если один не вышел: появится кнопка «продолжить».
+      <b>Обычно кадр рисуется 5–20 секунд</b>, в час пик — до минуты: приложение само переключается между движками,
+      поэтому три кадра — это примерно полминуты, а не «зависло». Готовые кадры остаются на месте, даже если один не вышел: появится кнопка «продолжить».
       Видео собирается здесь же. Вкладку не закрывайте, пока идёт рисование.</p>
     <textarea id="ctp" placeholder="например: лисёнок учится кататься на скейте во дворе, добрая история"></textarea>
     <div class="pgrid">
@@ -1372,55 +1369,135 @@ function imgUrl(prompt,w,h,seed){
 var imgQ=Promise.resolve();
 function qImg(fn){ var r=imgQ.then(fn,fn); imgQ=r.then(function(){},function(){}); return r; }
 
-function fetchImg(prompt,w,h,seed){
-  var ctl=("AbortController" in window)?new AbortController():null;
-  var to=setTimeout(function(){ if(ctl){ try{ ctl.abort(); }catch(e){} } },200000);
-  var init={headers:imgHeaders()};
-  if(ctl) init.signal=ctl.signal;
-  return fetch(imgUrl(prompt,w,h,seed),init).then(function(r){
-    clearTimeout(to);
-    if(r.ok) return r.blob();
-    return r.text().then(function(t){
-      var j=null; try{ j=JSON.parse(t); }catch(e){}
-      var msg=(j&&j.error&&j.error.message)||(j&&j.message)||String(t).slice(0,200)||("HTTP "+r.status);
-      var err=new Error(msg); err.status=r.status; err.wait=waitSec(msg); throw err;
-    });
-  },function(e){ clearTimeout(to); throw e; });
+/* ---------- картинки: цепочка провайдеров (быстрый -> резервный -> лимитный) ---------- */
+var IMGMEM={};
+function blobResult(blob,prompt){
+  return new Promise(function(res,rej){
+    var url=URL.createObjectURL(blob), im=new Image();
+    im.onload=function(){ res({blob:blob,url:url,w:im.naturalWidth,h:im.naturalHeight,alt:prompt}); };
+    im.onerror=function(){ rej(new Error("картинка не открылась")); };
+    im.src=url;
+  });
 }
 
-function genImage(prompt,w,h,setStat,opts){
-  opts=opts||{};
-  var seed=Math.floor(Math.random()*1e6), tries=0, t0=Date.now(),
-      deadline=Date.now()+(opts.deadline||540000), backoff=6000;
-  function loop(){
+/* Hugging Face Gradio-спейс: POST -> event_id -> SSE -> file url */
+function hfCall(host,data,timeoutMs){
+  var ctl=("AbortController" in window)?new AbortController():null;
+  var to=setTimeout(function(){ if(ctl){ try{ ctl.abort(); }catch(e){} } },timeoutMs||120000);
+  var init={headers:{"Content-Type":"application/json"},method:"POST",body:JSON.stringify({data:data})};
+  if(ctl) init.signal=ctl.signal;
+  var base="https://"+host+"/gradio_api/call/infer";
+  return fetch(base,init).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error("сервис ответил "+r.status+": "+String(t).slice(0,120)); });
+    return r.json();
+  }).then(function(j){
+    if(!j||!j.event_id) throw new Error("задача не принята");
+    var g={method:"GET"};
+    if(ctl) g.signal=ctl.signal;
+    return fetch(base+"/"+j.event_id,g);
+  }).then(function(r){
+    if(!r.ok) throw new Error("нет ответа задачи: "+r.status);
+    return r.text();
+  }).then(function(txt){
+    clearTimeout(to);
+    var em=/event:\s*error\s*\r?\n\s*data:\s*([\s\S]*?)(?:\r?\n\r?\n|$)/.exec(txt);
+    if(em){
+      var msg="генератор вернул ошибку";
+      try{ var j=JSON.parse(em[1]); msg=(j&&j.error)||msg; }catch(e){ msg=String(em[1]||msg).slice(0,160); }
+      var err=new Error(msg); err.hard=/quota|exceeded|too many|busy/i.test(msg); throw err;
+    }
+    var m=/event:\s*complete\s*\r?\n\s*data:\s*([\s\S]*?)(?:\r?\n\r?\n|$)/.exec(txt);
+    if(!m) throw new Error("генератор не ответил");
+    var arr=null; try{ arr=JSON.parse(m[1]); }catch(e){}
+    var item=Array.isArray(arr)?arr[0]:arr;
+    var url=item&&(item.url||(item.image&&item.image.url));
+    if(!url) throw new Error("нет ссылки на картинку");
+    return fetch(url).then(function(x){
+      if(!x.ok) throw new Error("картинка не скачалась: "+x.status);
+      return x.blob();
+    });
+  }).catch(function(e){ clearTimeout(to); throw e; });
+}
+
+/* лимитный, но самый доступный: одна картинка в 45 с на адрес */
+function polliCall(prompt,w,h,seed,deadline,setStat){
+  var tries=0, t0=Date.now(), backoff=4000;
+  function go(){
     tries++;
-    return fetchImg(prompt,w,h,seed).catch(function(e){
+    var ctl=("AbortController" in window)?new AbortController():null;
+    var to=setTimeout(function(){ if(ctl){ try{ ctl.abort(); }catch(e){} } },150000);
+    var init={};
+    if(ctl) init.signal=ctl.signal;
+    if(cfg&&cfg.pollen) init.headers={Authorization:"Bearer "+cfg.pollen};
+    return fetch(imgUrl(prompt,w,h,seed),init).then(function(r){
+      clearTimeout(to);
+      if(r.ok) return r.blob();
+      return r.text().then(function(t){
+        var j=null; try{ j=JSON.parse(t); }catch(e){}
+        var msg=(j&&j.error&&j.error.message)||String(t).slice(0,160)||("HTTP "+r.status);
+        var e=new Error(msg); e.status=r.status; e.wait=waitSec(msg); throw e;
+      });
+    },function(e){ clearTimeout(to); throw e; }).catch(function(e){
       var msg=String(e&&e.message||e), s=e.wait||0, st=e.status||0;
-      var soft=(st===402)||st===429||st>=500||s>0||
-        /free limit|rate|too many|timeout|timed out|network|failed to fetch|abort|load failed|unavailable|try again/i.test(msg);
       var left=deadline-Date.now();
-      if(soft && left>8000){
-        var wait=s||Math.min(backoff,Math.max(6,Math.round(left/1000/3)));
-        backoff=Math.min(backoff*1.5,30000);
-        return pause(wait,setStat,"сервис картинок занят, повтор "+tries).then(loop);
-      }
-      if(soft){
-        var secs=Math.round((Date.now()-t0)/1000);
-        throw new Error(secs>=120
-          ? "сервис картинок не отвечает уже "+Math.round(secs/60)+" мин. Попробуйте позже — или подключите свой ключ, тогда лимита не будет."
-          : "сервис картинок сейчас сбоит. Попробуйте ещё раз через минуту — или подключите свой ключ.");
+      var soft=(st===402)||(st===429)||st>=500||s>0||/free limit|rate|too many|timeout|network|failed to fetch|abort/i.test(msg);
+      if(soft&&left>6000){
+        var wait=s||Math.min(backoff,20);
+        backoff=Math.min(backoff*1.4,25000);
+        if(setStat) setStat("лимит бесплатного потока, следующий кадр через "+Math.round(wait)+" с");
+        return pause(wait,null,null).then(go);
       }
       throw e;
     });
   }
-  return qImg(loop).then(function(blob){
-    return new Promise(function(res,rej){
-      var url=URL.createObjectURL(blob), im=new Image();
-      im.onload=function(){ res({blob:blob,url:url,w:im.naturalWidth,h:im.naturalHeight,alt:prompt}); };
-      im.onerror=function(){ rej(new Error("картинка не открылась")); };
-      im.src=url;
+  return go();
+}
+
+function genImage(prompt,w,h,setStat,opts){
+  opts=opts||{};
+  var seed=(opts.seed!==undefined&&opts.seed!==null)?opts.seed:Math.floor(Math.random()*1e6);
+  var say=function(t){ if(setStat) setStat(t); };
+  var memKey=prompt+"|"+w+"x"+h+"|"+seed;
+  if(IMGMEM[memKey]) return blobResult(IMGMEM[memKey],prompt);
+
+  var t0=Date.now();
+  function tick(label){
+    var iv=setInterval(function(){ say(label+" · "+Math.round((Date.now()-t0)/1000)+" с"); },1200);
+    return function(){ clearInterval(iv); };
+  }
+  function finish(blob,engine){
+    IMGMEM[memKey]=blob;
+    if(setStat) setStat("готово · "+engine);
+    return blobResult(blob,prompt);
+  }
+  function tryHF(host,data,timeoutMs,label,engine){
+    say(label);
+    var stop=tick(label);
+    return hfCall(host,data,timeoutMs).then(function(b){ stop(); return finish(b,engine); },
+      function(e){ stop(); throw e; });
+  }
+
+  /* 1. FLUX.1-schnell — обычно 5-20 с */
+  return tryHF("black-forest-labs-flux-1-schnell.hf.space",
+      [prompt,seed,false,w,h,4],75000,"рисую кадр (быстрый движок)","FLUX schnell")
+    .catch(function(e1){
+      /* 2. FLUX.1-merged */
+      return tryHF("multimodalart-flux-1-merged.hf.space",
+        [prompt,seed,false,w,h,3.5,4],95000,"быстрый движок занят, пробую резервный","FLUX резерв")
+        .catch(function(e2){
+          /* 3. Pollinations с ожиданием лимита */
+          say("резервные движки недоступны, рисую через бесплатный поток");
+          var stop=tick("рисую через бесплатный поток");
+          return polliCall(prompt,w,h,seed,Date.now()+(opts.deadline||300000),function(t){ say(t); })
+            .then(function(b){ stop(); return finish(b,"бесплатный поток"); },
+              function(e3){
+                stop();
+                var msg=String((e1&&e1.message)||"")+" / "+String((e2&&e2.message)||"")+" / "+String((e3&&e3.message)||"");
+                if(/quota|exceeded/i.test(msg)) throw new Error("у бесплатных генераторов закончилась квота на этот адрес. Подключите свой ключ в настройках — или попробуйте через 10–15 минут.");
+                throw new Error("не удалось нарисовать: "+String((e3&&e3.message)||msg).slice(0,180));
+              });
+        });
     });
-  });
 }
 
 function textCall(msgs,opts,setStat){
@@ -1632,7 +1709,7 @@ function ctResumeBtn(label,fn){
 }
 function ctDraw(){
   var stat=el("ctstat"), btn=el("ctgo");
-  var plan=CT.plan, n=plan.scenes.length, secPer=CT.secPer||50;
+  var plan=CT.plan, n=plan.scenes.length, secPer=CT.secPer||22;
   CT.busy=true; btn.disabled=true;
   var i=CT.next||0;
   (function step(){
@@ -1645,11 +1722,11 @@ function ctDraw(){
     }
     var sc=plan.scenes[i];
     stat.className="pstat";
-    stat.textContent="рисую кадр "+(i+1)+" из "+n+" · примерно "+ctEta(i,n,secPer);
+    stat.textContent="рисую кадр "+(i+1)+" из "+n+" · осталось примерно "+ctEta(i,n,secPer);
     ctBar(i,n);
     var prompt=sc.prompt+", consistent character and style, "+plan.style+", без текста и водяных знаков";
     genImage(prompt,1024,576,function(t){
-      stat.textContent="кадр "+(i+1)+"/"+n+" · "+t+" · до конца примерно "+ctEta(i,n,secPer);
+      stat.textContent="кадр "+(i+1)+"/"+n+" · "+t;
     },{deadline:CT.budget||540000}).then(function(r){
       CT.frames.push({url:r.url,blob:r.blob,caption:sc.caption});
       i++; CT.next=i;
@@ -1713,7 +1790,7 @@ function runCartoon(preset,resume){
   if(n===1) n=3;
   btn.disabled=true; CT.blob=null; CT.busy=true; CT.plan=null; CT.next=0; CT.frames=[];
   if(!CT.budget) CT.budget=540000;
-  CT.secPer=50;
+  CT.secPer=22;
   el("ctplayer").style.display="none"; el("ctctrl").style.display="none"; el("ctout").innerHTML="";
   ctBar(0,n);
   stat.className="pstat"; stat.textContent="придумываю раскадровку · примерно "+ctEta(0,n,CT.secPer);
