@@ -1730,6 +1730,13 @@ function ctEta(done,total,secPer){
   var left=Math.round((total-done)*secPer/60);
   return left<=1?"меньше минуты":(left+" мин");
 }
+function ctWord(n){
+  var a=Math.abs(n)%100, b=a%10;
+  if(a>10&&a<20) return n+" кадров";
+  if(b===1) return n+" кадр";
+  if(b>=2&&b<=4) return n+" кадра";
+  return n+" кадров";
+}
 function ctLeft(done,total,avg){
   if(!avg) return "обычно 5–20 секунд на кадр";
   var left=Math.max(0,Math.round((total-done)*avg));
@@ -1753,7 +1760,8 @@ function ctDraw(){
     if(i>=n){
       CT.busy=false; btn.disabled=false; CT.next=0;
       ctBar(n,n);
-      stat.className="pstat"; stat.textContent="готово: "+CT.frames.length+" кадров. Можно проиграть или собрать видео.";
+      stat.className="pstat"; stat.textContent="готово: "+ctWord(CT.frames.length)+". "
+        +(CT.frames.length>=2?"Можно проиграть или собрать видео.":"Нужен ещё хотя бы один кадр для видео.");
       setTimeout(function(){ ctBar(0,0); },2500);
       return;
     }
@@ -1864,6 +1872,8 @@ el("ctgo").addEventListener("click",function(){ runCartoon(); });
 el("ctplay").addEventListener("click",playFrames);
 el("ctwebm").addEventListener("click",function(){
   if(!CT.frames.length){ el("ctvstat").textContent="сначала соберите кадры"; return; }
+  if(CT.frames.length<2){ el("ctvstat").textContent="для видео нужно хотя бы два кадра — сейчас "+CT.frames.length
+      +". Нажмите «продолжить», чтобы дорисовать остальные."; return; }
   var st=el("ctvstat"), btn=this;
   btn.disabled=true; st.textContent="пишу видео…";
   recordFrames(CT.frames.map(function(f){ return f.url; }),2.2,1024,576,function(t,total){
