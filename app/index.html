@@ -143,6 +143,8 @@ footer a:hover{color:var(--teal)}
   background-position:calc(100% - 18px) 52%,calc(100% - 13px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px}
 .panel .prow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 4px}
 .pstat{font-size:12.5px;color:var(--dim);min-height:18px;margin:6px 0 8px}
+.bar{display:none;height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin:2px 0 10px}
+.bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#a78bfa,#5eead4);transition:width .4s ease}
 .pstat.err{color:#ff9b9b}
 .shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin:6px 0 12px}
 .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1119}
@@ -239,8 +241,9 @@ form.composer #micBtn.rec{color:#0b0d12;background:var(--teal);border-color:tran
   <div class="panel" id="p-cartoon">
     <h2>Мультфильм из кадров</h2>
     <p class="pnote">Модель придумывает историю и раскадровку, потом я рисую кадры по очереди.
-      <b>Каждый кадр — минимум 45 секунд ожидания</b> в бесплатном режиме: три кадра это примерно две-три минуты.
-      Готовые кадры можно проиграть и собрать в видео прямо здесь.</p>
+      <b>Бесплатный режим даёт примерно один кадр в минуту</b>: три кадра — это 2–4 минуты ожидания, и это нормально.
+      Готовые кадры остаются на месте, даже если один не вышел: появится кнопка «продолжить».
+      Видео собирается здесь же. Вкладку не закрывайте, пока идёт рисование.</p>
     <textarea id="ctp" placeholder="например: лисёнок учится кататься на скейте во дворе, добрая история"></textarea>
     <div class="pgrid">
       <select id="ctn" aria-label="Сколько кадров">
@@ -258,6 +261,7 @@ form.composer #micBtn.rec{color:#0b0d12;background:var(--teal);border-color:tran
     </div>
     <div class="prow"><button class="btn primary" type="button" id="ctgo">Собрать мультфильм</button>
       <span class="pstat" id="ctstat"></span></div>
+    <div class="bar" id="ctbar" role="progressbar" aria-label="Готовность кадров"><i></i></div>
     <div class="player" id="ctplayer" style="display:none"><canvas id="ctcv" width="1024" height="576"></canvas></div>
     <div class="prow" id="ctctrl" style="display:none">
       <button class="btn" type="button" id="ctplay">проиграть</button>
@@ -1382,14 +1386,28 @@ function fetchImg(prompt,w,h,seed){
   },function(e){ clearTimeout(to); throw e; });
 }
 
-function genImage(prompt,w,h,setStat){
-  var seed=Math.floor(Math.random()*1e6), tries=0;
+function genImage(prompt,w,h,setStat,opts){
+  opts=opts||{};
+  var seed=Math.floor(Math.random()*1e6), tries=0, t0=Date.now(),
+      deadline=Date.now()+(opts.deadline||540000), backoff=6000;
   function loop(){
     tries++;
     return fetchImg(prompt,w,h,seed).catch(function(e){
-      var s=e.wait||0;
-      var soft=(e.status===402)||s>0||/free limit|rate|too many/i.test(String(e.message));
-      if(tries<10 && soft) return pause(s||45,setStat,"бесплатный лимит картинок").then(loop);
+      var msg=String(e&&e.message||e), s=e.wait||0, st=e.status||0;
+      var soft=(st===402)||st===429||st>=500||s>0||
+        /free limit|rate|too many|timeout|timed out|network|failed to fetch|abort|load failed|unavailable|try again/i.test(msg);
+      var left=deadline-Date.now();
+      if(soft && left>8000){
+        var wait=s||Math.min(backoff,Math.max(6,Math.round(left/1000/3)));
+        backoff=Math.min(backoff*1.5,30000);
+        return pause(wait,setStat,"сервис картинок занят, повтор "+tries).then(loop);
+      }
+      if(soft){
+        var secs=Math.round((Date.now()-t0)/1000);
+        throw new Error(secs>=120
+          ? "сервис картинок не отвечает уже "+Math.round(secs/60)+" мин. Попробуйте позже — или подключите свой ключ, тогда лимита не будет."
+          : "сервис картинок сейчас сбоит. Попробуйте ещё раз через минуту — или подключите свой ключ.");
+      }
       throw e;
     });
   }
@@ -1553,52 +1571,105 @@ function playFrames(){
   })();
 }
 
-function runCartoon(preset){
+function ctBar(done,total){
+  var bar=el("ctbar"); if(!bar) return;
+  if(!total){ bar.style.display="none"; return; }
+  bar.style.display="block";
+  bar.querySelector("i").style.width=Math.max(4,Math.min(100,Math.round(done/total*100)))+"%";
+}
+function ctEta(done,total,secPer){
+  var left=Math.round((total-done)*secPer/60);
+  return left<=1?"меньше минуты":(left+" мин");
+}
+function ctResumeBtn(label,fn){
+  var wrap=document.createElement("div"); wrap.className="rowbtns"; wrap.style.margin="0 0 12px";
+  var b=document.createElement("button"); b.type="button"; b.className="btn"; b.textContent=label;
+  b.onclick=function(){ wrap.remove(); fn(); };
+  wrap.appendChild(b); el("ctout").insertBefore(wrap,el("ctout").firstChild);
+  return b;
+}
+function ctDraw(){
   var stat=el("ctstat"), btn=el("ctgo");
+  var plan=CT.plan, n=plan.scenes.length, secPer=CT.secPer||50;
+  CT.busy=true; btn.disabled=true;
+  var i=CT.next||0;
+  (function step(){
+    if(i>=n){
+      CT.busy=false; btn.disabled=false; CT.next=0;
+      ctBar(n,n);
+      stat.className="pstat"; stat.textContent="готово: "+CT.frames.length+" кадров. Можно проиграть или собрать видео.";
+      setTimeout(function(){ ctBar(0,0); },2500);
+      return;
+    }
+    var sc=plan.scenes[i];
+    stat.className="pstat";
+    stat.textContent="рисую кадр "+(i+1)+" из "+n+" · примерно "+ctEta(i,n,secPer);
+    ctBar(i,n);
+    var prompt=sc.prompt+", consistent character and style, "+plan.style+", без текста и водяных знаков";
+    genImage(prompt,1024,576,function(t){
+      stat.textContent="кадр "+(i+1)+"/"+n+" · "+t+" · до конца примерно "+ctEta(i,n,secPer);
+    },{deadline:CT.budget||540000}).then(function(r){
+      CT.frames.push({url:r.url,blob:r.blob,caption:sc.caption});
+      i++; CT.next=i;
+      ctBar(i,n);
+      if(CT.frames.length) showFrames();
+      step();
+    }).catch(function(e){
+      CT.busy=false; btn.disabled=false; CT.next=i;
+      ctBar(i,n);
+      var msg=String(e&&e.message||e).slice(0,220);
+      stat.className="pstat err";
+      stat.textContent="кадр "+(i+1)+" из "+n+" не вышел: "+msg;
+      if(CT.frames.length){
+        stat.textContent+=CT.frames.length===1
+          ? " Кадр 1 уже готов и останется здесь."
+          : " Кадры 1–"+CT.frames.length+" уже готовы и останутся здесь.";
+        ctResumeBtn("продолжить с кадра "+(i+1),function(){ ctDraw(); });
+      }
+    });
+  })();
+}
+function runCartoon(preset,resume){
+  var stat=el("ctstat"), btn=el("ctgo");
+  if(CT.busy){ stat.className="pstat"; stat.textContent="уже рисую кадры — подождите, пожалуйста"; return; }
+  if(resume && CT.plan && CT.frames.length){ ctDraw(); return; }
   if(typeof preset==="string" && preset) el("ctp").value=preset;
   var idea=(el("ctp").value||"").trim();
   if(!idea){ stat.className="pstat err"; stat.textContent="Опишите сюжет в двух словах."; return; }
   var n=parseInt(el("ctn").value,10)||3, style=el("ctst").value;
-  btn.disabled=true; CT.blob=null;
+  if(n===1) n=3;
+  btn.disabled=true; CT.blob=null; CT.busy=true; CT.plan=null; CT.next=0; CT.frames=[];
+  if(!CT.budget) CT.budget=540000;
+  CT.secPer=50;
   el("ctplayer").style.display="none"; el("ctctrl").style.display="none"; el("ctout").innerHTML="";
-  stat.className="pstat"; stat.textContent="придумываю раскадровку…";
+  ctBar(0,n);
+  stat.className="pstat"; stat.textContent="придумываю раскадровку · примерно "+ctEta(0,n,CT.secPer);
   var msgs=[
     {role:"system",content:"Ты — режиссёр коротких мультфильмов. Отвечай только JSON-массивом, без markdown и пояснений."},
     {role:"user",content:"Идея: "+idea+"\nСтиль: "+style+"\nСделай ровно "+n+" последовательных кадра одной истории."
       +" Формат: [{\"caption\":\"короткая подпись по-русски\",\"prompt\":\"подробное описание кадра по-английски для генератора изображений: тот же герой, та же сцена, что и в других кадрах\"}]."
       +" Описания должны быть визуальными и конкретными, герой одинаковый во всех кадрах."}
   ];
-  var scenesP=textCall(msgs,{maxTokens:900,temperature:.8},function(t){ stat.textContent=t; })
+  textCall(msgs,{maxTokens:900,temperature:.8},function(t){ stat.textContent=t; })
     .then(function(txt){
-      var s=parseScenes(txt,n);
-      if(!s.length){
-        s=[];
+      var sc=parseScenes(txt,n);
+      if(!sc.length){
+        sc=[];
         for(var i=0;i<n;i++){
-          s.push({caption:"Кадр "+(i+1),prompt:idea+", scene "+(i+1)+" of "+n+", same character throughout, "+style});
+          sc.push({caption:"Кадр "+(i+1),prompt:idea+", scene "+(i+1)+" of "+n+", same character throughout, "+style});
         }
-        stat.textContent="раскадровку не разобрала — рисую кадры напрямую";
+        stat.textContent="раскадровку не разобрала — рисую кадры по идее напрямую";
       }
-      return s;
+      CT.plan={scenes:sc,style:style,idea:idea,n:n};
+      CT.next=0;
+      ctDraw();
+    })
+    .catch(function(e){
+      CT.busy=false; btn.disabled=false; ctBar(0,0);
+      stat.className="pstat err";
+      stat.textContent="раскадровка не получилась: "+String(e&&e.message||e).slice(0,200)
+        +" — нажмите «Собрать мультфильм» ещё раз через минуту.";
     });
-  scenesP.then(function(scenes){
-    CT.frames=[];
-    var chain=Promise.resolve();
-    scenes.forEach(function(sc,i){
-      chain=chain.then(function(){
-        stat.textContent="рисую кадр "+(i+1)+" из "+scenes.length+"…";
-        var p=sc.prompt+", consistent character and style, "+style+", без текста и водяных знаков";
-        return genImage(p,1024,576,function(t){ stat.textContent="кадр "+(i+1)+"/"+scenes.length+" · "+t; })
-          .then(function(r){ CT.frames.push({url:r.url,blob:r.blob,caption:sc.caption}); });
-      });
-    });
-    return chain;
-  }).then(function(){
-    stat.textContent="готово: "+CT.frames.length+" кадров. Можно проиграть или собрать видео.";
-    showFrames();
-  }).catch(function(e){
-    stat.className="pstat err";
-    stat.textContent="не получилось: "+String(e&&e.message||e).slice(0,160);
-  }).then(function(){ btn.disabled=false; });
 }
 
 el("ctgo").addEventListener("click",function(){ runCartoon(); });
@@ -1814,7 +1885,7 @@ function tryRoute(text){
   return false;
 }
 
-window.VStudio={open:openTab,image:runImage,cartoon:runCartoon,design:runDesign,site:runSite,tryRoute:tryRoute};
+window.VStudio={open:openTab,image:runImage,cartoon:runCartoon,design:runDesign,site:runSite,tryRoute:tryRoute,_ct:{state:CT,draw:ctDraw}};
 })();
 </script>
 
@@ -2228,7 +2299,7 @@ window.VSound={speak:speak,stop:stopSpeak,sfx:playSfx,melody:renderMelody,play:p
 <script>
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load",function(){
-    navigator.serviceWorker.register("sw.js?v=5").catch(function(){});
+    navigator.serviceWorker.register("sw.js?v=6").catch(function(){});
   });
 }
 </script>
