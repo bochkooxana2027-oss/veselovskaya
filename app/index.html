@@ -137,8 +137,8 @@ footer a:hover{color:var(--teal)}
 
 <main><div class="wrap">
   <h1>Напишите запрос <span>в поле ниже</span></h1>
-  <p class="sub">Считаю точно и сразу: кредит, проценты, единицы, даты, контент-план, раскадровка, промпт для картинки.
-     Свободные тексты — если подключите свою модель (кнопка справа сверху).</p>
+  <p class="sub">Спросите что угодно: письмо, объяснение, перевод, код, идеи. Расчёты — кредит, проценты, единицы,
+     даты — считаю точно и сразу, локально. Бесплатная модель уже включена: ключ не нужен.</p>
 
   <div id="chat" aria-live="polite"></div>
 
@@ -159,20 +159,21 @@ footer a:hover{color:var(--teal)}
 <div class="ovl" id="ovl" role="dialog" aria-modal="true" aria-labelledby="mtitle">
   <div class="sheet">
     <h2 id="mtitle">Модель для свободных текстов</h2>
-    <p class="note">По умолчанию страница считает сама, без сети. Если нужны письма, статьи и разбор —
-       подключите свой ключ: запросы уйдут прямо из браузера в выбранный сервис, минуя этот сайт.
-       Ключ хранится только в этом браузере.</p>
+    <p class="note">Расчёты считаются здесь, на странице. Всё остальное — обычный чат: письма, объяснения,
+       переводы, код, любые вопросы. По умолчанию работает бесплатный режим без ключа;
+       можно вставить свой ключ — тогда запросы идут напрямую из браузера в выбранный сервис.</p>
 
     <div class="field">
       <label for="mprov">Сервис</label>
       <select id="mprov">
+        <option value="free">Бесплатно, без ключа</option>
         <option value="openrouter">OpenRouter — много моделей, есть бесплатные</option>
         <option value="groq">Groq — быстро, бесплатный тариф</option>
         <option value="gemini">Google Gemini — бесплатный тариф</option>
         <option value="custom">Свой сервер, OpenAI-совместимый</option>
       </select>
     </div>
-    <div class="field">
+    <div class="field" id="keywrap">
       <label for="mkey">Ключ API</label>
       <input id="mkey" type="password" autocomplete="off" spellcheck="false" placeholder="вставьте ключ">
     </div>
@@ -191,6 +192,9 @@ footer a:hover{color:var(--teal)}
       <button class="btn" type="button" id="mclose">Закрыть</button>
     </div>
     <div class="status" id="mstat"></div>
+    <p class="note" style="margin-top:10px">В бесплатном режиме запросы идут через сервис Pollinations:
+       он не требует ключа, но может ограничивать частоту и не гарантирует постоянную доступность.
+       Для стабильной работы подключите свой ключ.</p>
   </div>
 </div>
 
@@ -631,6 +635,8 @@ var chat=document.getElementById("chat"), form=document.getElementById("form"),
 var KEY="veselovskaya-web-v1", hist=[];
 
 var EXAMPLES=[
+  "объясни простыми словами, что такое инфляция",
+  "напиши письмо клиенту про перенос встречи",
   "ипотека 3 млн на 15 лет под 12%",
   "15% от 4800",
   "скидка 30% на 5000",
@@ -731,15 +737,17 @@ function restore(){
 /* ========================= необязательная модель ========================= */
 var MKEY="veselovskaya-model-v1";
 var PROVIDERS={
+  free:{name:"Бесплатно, без ключа",base:"https://text.pollinations.ai/v1",model:"openai"},
   openrouter:{name:"OpenRouter",base:"https://openrouter.ai/api/v1",model:"openrouter/auto"},
   groq:{name:"Groq",base:"https://api.groq.com/openai/v1",model:"llama-3.3-70b-versatile"},
   gemini:{name:"Google Gemini",base:"",model:"gemini-2.0-flash"},
   custom:{name:"Свой сервер (OpenAI-совместимый)",base:"",model:""}
 };
-var cfg={provider:"openrouter",key:"",model:"",base:""};
+var cfg={provider:"free",key:"",model:"",base:""};
 try{ var _c=localStorage.getItem(MKEY); if(_c) cfg=Object.assign(cfg,JSON.parse(_c)); }catch(e){}
 function saveCfg(){ try{ localStorage.setItem(MKEY,JSON.stringify(cfg)); }catch(e){} }
-function cfgReady(){ return !!(cfg.key && cfg.key.trim()); }
+function freeMode(){ return (cfg.provider||"free")==="free"; }
+function cfgReady(){ return freeMode() || !!(cfg.key && cfg.key.trim()); }
 
 var SYSTEM="Ты — Веселовская, деловой ассистент. Отвечай по-русски, кратко и по делу, без вступлений и без воды. "
  +"Если просят посчитать — покажи числа и короткий расчёт. Если просят текст — дай готовый текст, а не советы о нём. "
@@ -777,8 +785,8 @@ function inline(t){
 }
 
 function callModel(messages){
-  var key=(cfg.key||"").trim(), p=cfg.provider||"openrouter";
-  if(!key) return Promise.reject(new Error("Ключ не задан"));
+  var key=(cfg.key||"").trim(), p=cfg.provider||"free";
+  if(p!=="free" && !key) return Promise.reject(new Error("Ключ не задан"));
   if(p==="gemini"){
     var gm=(cfg.model||PROVIDERS.gemini.model).trim();
     var url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(gm)
@@ -797,11 +805,13 @@ function callModel(messages){
   }
   var base=((cfg.base||PROVIDERS[p].base)||"").replace(/\/+$/,"");
   if(!base) return Promise.reject(new Error("Не задан адрес сервера"));
-  var mdl=(cfg.model||PROVIDERS[p].model||"").trim();
+  var mdl=(cfg.model||(PROVIDERS[p]||{}).model||"").trim();
   if(!mdl) return Promise.reject(new Error("Не задано имя модели"));
-  var headers={"Content-Type":"application/json","Authorization":"Bearer "+key};
+  var headers={"Content-Type":"application/json"};
+  if(key) headers["Authorization"]="Bearer "+key;
   if(p==="openrouter"){ headers["HTTP-Referer"]=location.origin; headers["X-Title"]="Veselovskaya web"; }
-  return fetch(base+"/chat/completions",{method:"POST",headers:headers,
+  var url=/\/chat\/completions$/.test(base)?base:base+"/chat/completions";
+  return fetch(url,{method:"POST",headers:headers,
       body:JSON.stringify({model:mdl,messages:messages,temperature:0.4,max_tokens:1200})})
     .then(readJson).then(function(j){
       var m=j.choices&&j.choices[0]&&j.choices[0].message;
@@ -827,6 +837,10 @@ function friendly(j){
 }
 function modelError(e){
   var m=String(e&&e.message||e||""), low=m.toLowerCase();
+  if(rateWait(m)>0||low.indexOf("free limit")>=0||low.indexOf("too many requests")>=0)
+    return "Бесплатный режим даёт один ответ примерно в 45 секунд — лимит ещё не истёк. "
+      +"Подождите минуту и повторите, либо подключите свой ключ: ответы пойдут без ограничений "
+      +"и без задержек.<br><button class=\"btn\" type=\"button\" data-openmodel>Подключить ключ</button>";
   if(low.indexOf("401")>=0||low.indexOf("invalid api key")>=0||low.indexOf("unauthor")>=0||low.indexOf("api key")>=0)
     return "Ключ не принят. Проверьте его в настройках модели.";
   if(low.indexOf("429")>=0||low.indexOf("quota")>=0||low.indexOf("rate")>=0)
@@ -834,6 +848,45 @@ function modelError(e){
   if(low.indexOf("failed to fetch")>=0||low.indexOf("network")>=0||low.indexOf("load failed")>=0)
     return "Нет связи с сервисом модели: проверьте интернет или адрес сервера.";
   return "Модель не ответила: "+esc(m).slice(0,200);
+}
+
+function rateWait(m){
+  var x=/retry after\s*(\d+)\s*s/i.exec(m); if(x) return parseInt(x[1],10);
+  var y=/(\d+)\s*second/i.exec(m); if(y) return parseInt(y[1],10);
+  return 0;
+}
+function countdown(ph,sec){
+  return new Promise(function(res){
+    var left=sec;
+    (function tick(){
+      if(left<=0){ res(); return; }
+      ph.bub.innerHTML='<p class="typing"><i></i><i></i><i></i> бесплатный лимит: повторю через '+left+' с</p>';
+      left--; setTimeout(tick,1000);
+    })();
+  });
+}
+function retryCall(msgs,left,ph){
+  return callModel(msgs).then(function(out){
+    if(out && String(out).trim()) return out;
+    throw new Error("пустой ответ");
+  }).catch(function(e){
+    var m=String(e&&e.message||""), low=m.toLowerCase();
+    var wait=rateWait(m);
+    var soft=wait>0||low.indexOf("429")>=0||low.indexOf("rate")>=0||low.indexOf("quota")>=0
+      ||low.indexOf("пустой")>=0||low.indexOf("failed to fetch")>=0||low.indexOf("502")>=0||low.indexOf("503")>=0;
+    if(left>1&&soft){
+      var sec=wait>0?Math.min(wait+2,75):3;
+      return countdown(ph,sec).then(function(){ return retryCall(msgs,left-1,ph); });
+    }
+    throw e;
+  });
+}
+
+var modelQueue=Promise.resolve();
+function enqueue(fn){
+  var run=modelQueue.then(fn,fn);
+  modelQueue=run.then(function(){},function(){});
+  return run;
 }
 
 function askModel(text){
@@ -844,7 +897,7 @@ function askModel(text){
     msgs.push({role:h.who==="user"?"user":"assistant",content:t});
   });
   if(!msgs.some(function(m){return m.role==="user";})) msgs.push({role:"user",content:text});
-  callModel(msgs).then(function(out){
+  enqueue(function(){ return retryCall(msgs, freeMode()?3:2, ph); }).then(function(out){
     var html=mdToHtml(out||"(пустой ответ)");
     ph.bub.innerHTML=html;
     var meta={skill:"Модель",note:(PROVIDERS[cfg.provider]||{}).name||""};
@@ -899,7 +952,7 @@ clearBtn.addEventListener("click",function(){
 restore();
 /* -------- панель модели -------- */
 var mbtn=document.getElementById("mbtn"), mtxt=document.getElementById("mtxt"),
-    ovl=document.getElementById("ovl"),
+    ovl=document.getElementById("ovl"), keyWrap=document.getElementById("keywrap"),
     fProv=document.getElementById("mprov"), fKey=document.getElementById("mkey"),
     fModel=document.getElementById("mmodel"), fBase=document.getElementById("mbase"),
     baseWrap=document.getElementById("basewrap"), stat=document.getElementById("mstat");
@@ -907,19 +960,25 @@ var mbtn=document.getElementById("mbtn"), mtxt=document.getElementById("mtxt"),
 function refreshModelBtn(){
   if(cfgReady()){
     mbtn.classList.add("on");
-    mtxt.textContent="модель: "+((PROVIDERS[cfg.provider]||{}).name||cfg.provider);
+    mtxt.textContent="модель: "+(freeMode()?"бесплатно":((PROVIDERS[cfg.provider]||{}).name||cfg.provider));
   } else {
     mbtn.classList.remove("on");
     mtxt.textContent="без модели";
   }
 }
+function syncFields(){
+  var p=fProv.value;
+  keyWrap.style.display=(p==="free")?"none":"block";
+  baseWrap.style.display=(p==="custom")?"block":"none";
+  var d=(PROVIDERS[p]||{}).model||"";
+  fModel.placeholder=d?"например, "+d:"имя модели";
+}
 function openModel(){
-  fProv.value=cfg.provider||"openrouter";
+  fProv.value=cfg.provider||"free";
   fKey.value=cfg.key||"";
   fModel.value=cfg.model||"";
   fBase.value=cfg.base||"";
-  baseWrap.style.display=(fProv.value==="custom")?"block":"none";
-  fModel.placeholder=(PROVIDERS[fProv.value]||{}).model?"например, "+PROVIDERS[fProv.value].model:"имя модели";
+  syncFields();
   stat.textContent=""; stat.className="status";
   ovl.classList.add("on");
   fKey.focus({preventScroll:true});
@@ -940,10 +999,10 @@ document.addEventListener("click",function(e){
   if(e.target.closest("[data-openmodel]")) openModel();
 });
 fProv.addEventListener("change",function(){
-  baseWrap.style.display=(fProv.value==="custom")?"block":"none";
+  syncFields();
   var d=(PROVIDERS[fProv.value]||{}).model||"";
-  fModel.placeholder=d?"например, "+d:"имя модели";
-  if(!fModel.value&&d) fModel.value=d;
+  if(fProv.value==="free") fModel.value="";
+  else if(d) fModel.value=d;
 });
 document.getElementById("msave").addEventListener("click",function(){
   readForm(); closeModel();
@@ -956,7 +1015,7 @@ document.getElementById("mdel").addEventListener("click",function(){
 });
 document.getElementById("mcheck").addEventListener("click",function(){
   readForm();
-  if(!cfg.key){ stat.textContent="Сначала вставьте ключ."; stat.className="status err"; return; }
+  if(!cfg.key && !freeMode()){ stat.textContent="Сначала вставьте ключ."; stat.className="status err"; return; }
   stat.textContent="Проверяю…"; stat.className="status";
   callModel([{role:"system",content:"Отвечай одним словом."},{role:"user",content:"Скажи: работает"}])
     .then(function(out){ stat.textContent="Ответ получен: "+String(out).slice(0,60); stat.className="status ok"; })
@@ -966,18 +1025,18 @@ refreshModelBtn();
 
 if(!hist.length){
   bubble("bot",
-    '<p><b>Здравствуйте. Я считаю то, что можно посчитать точно</b> — и не выдумываю остальное.</p>'
-    +"<ul><li>Кредиты и ипотека по формуле аннуитета, проценты, скидки, НДС, единицы, даты.</li>"
-    +"<li>Контент-план с датами и рубриками — таблицей, плюс CSV.</li>"
-    +"<li>Раскадровка с таймингами и промпт для генерации изображения.</li></ul>"
-    +'<p class="honest">Страница работает целиком в браузере: без сети, без аккаунта, без ключей. Нажмите пример ниже или введите свою задачу.</p>',
+    '<p><b>Здравствуйте. Пишите обычным текстом — как в любом чате.</b></p>'
+    +"<ul><li>Любые вопросы и просьбы: письмо, объяснение, перевод, код, план, идеи.</li>"
+    +"<li>Расчёты — кредит, проценты, скидки, НДС, единицы, даты — считаю точно и мгновенно.</li>"
+    +"<li>Контент-план таблицей с CSV, раскадровка, промпт для картинки.</li></ul>"
+    +'<p class="honest">Бесплатная модель включена сразу, ключ не нужен. Если нужна другая модель или стабильность — подключите свой ключ кнопкой «модель» вверху. Для расчётов интернет не требуется.</p>',
     {skill:"Знакомство"});
 }
 </script>
 <script>
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load",function(){
-    navigator.serviceWorker.register("sw.js?v=2").catch(function(){});
+    navigator.serviceWorker.register("sw.js?v=3").catch(function(){});
   });
 }
 </script>
