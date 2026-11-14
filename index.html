@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Веселовская — универсальный ассистент, который работает у вас</title>
+<meta name="description" content="Ассистент, который сам выбирает специалиста: считает смету и кредит, собирает контент-план, делает лендинги, готовит промпты для картинок и раскадровки видео. Работает офлайн, данные не уходят в облако.">
+<meta name="theme-color" content="#0e1015">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Веселовская — ассистент, который сам выбирает специалиста">
+<meta property="og:description" content="Расчёты без ошибок, контент-планы и лендинги в один запрос. Работает офлайн, ставится одним файлом.">
+<meta property="og:site_name" content="Веселовская">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:image" content="https://bochkooxana2027-oss.github.io/veselovskaya/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root{
+    --bg:#0b0d12; --bg2:#0e1015; --panel:#12161f; --panel2:#171d29; --line:#232a38;
+    --text:#e9edf5; --muted:#98a2b3; --dim:#6b7688;
+    --accent:#a78bfa; --accent2:#5eead4; --grad:linear-gradient(135deg,#a78bfa,#5eead4);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  h1,h2,h3{line-height:1.22;letter-spacing:-.02em;margin:0 0 16px}
+  h1{font-size:clamp(32px,5vw,56px);font-weight:800}
+  h2{font-size:clamp(25px,3.2vw,36px);font-weight:750}
+  h3{font-size:18px;font-weight:700}
+  p{margin:0 0 14px}
+  .muted{color:var(--muted)}
+  .dim{color:var(--dim)}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;background:rgba(11,13,18,.78);backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:18px;height:64px}
+  .logo{display:flex;align-items:center;gap:11px;font-weight:750;letter-spacing:-.01em}
+  .mark{width:34px;height:34px;border-radius:11px;background:var(--grad);color:#0b0d12;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+  nav .links{margin-left:auto;display:flex;gap:22px;font-size:14.5px;color:var(--muted)}
+  nav .links a{text-decoration:none}
+  nav .links a:hover{color:var(--text)}
+  .btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;border-radius:12px;
+    padding:13px 22px;font-weight:700;font-size:15px;border:1px solid transparent;transition:.18s;cursor:pointer}
+  .btn.primary{background:var(--grad);color:#0b0d12}
+  .btn.primary:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(167,139,250,.28)}
+  .btn.ghost{border-color:var(--line);color:var(--text);background:rgba(255,255,255,.02)}
+  .btn.ghost:hover{border-color:#3a4356}
+  .btn.sm{padding:9px 15px;font-size:13.5px;border-radius:10px}
+
+  /* hero */
+  header.hero{position:relative;padding:76px 0 64px;overflow:hidden}
+  header.hero:before{content:"";position:absolute;inset:-40% 20% auto -10%;height:640px;
+    background:radial-gradient(600px 320px at 30% 20%,rgba(167,139,250,.22),transparent 70%),
+               radial-gradient(520px 300px at 75% 40%,rgba(94,234,212,.13),transparent 70%);
+    filter:blur(10px);z-index:-1}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:52px;align-items:center}
+  .kicker{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--accent2);
+    border:1px solid rgba(94,234,212,.28);background:rgba(94,234,212,.06);
+    padding:7px 13px;border-radius:999px;margin-bottom:22px}
+  .kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent2);display:block}
+  .lead{font-size:clamp(16px,1.6vw,18.5px);color:var(--muted);max-width:560px;margin-bottom:28px}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .micro{font-size:13px;color:var(--dim)}
+
+  /* chat mock */
+  .chat{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    border-radius:20px;padding:16px;box-shadow:0 30px 80px rgba(0,0,0,.45);font-size:13.6px}
+  .chat .bar{display:flex;align-items:center;gap:9px;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#34d399}
+  .chat .bar b{font-size:13.5px}
+  .chat .bar span{color:var(--dim);font-size:12px;margin-left:auto}
+  .bub{padding:11px 13px;border-radius:13px;margin-bottom:9px;line-height:1.55}
+  .me{background:#1d2534;margin-left:auto;max-width:86%;font-size:13.2px}
+  .bot{background:#0f131b;border:1px solid var(--line)}
+  .bot .who{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:6px}
+  .bot strong{color:#fff}
+  table.mini{width:100%;border-collapse:collapse;font-size:11.8px;margin-top:8px}
+  table.mini th,table.mini td{border:1px solid var(--line);padding:5px 7px;text-align:left}
+  table.mini th{background:#10141c;color:var(--muted);font-weight:600}
+  .file{display:inline-flex;gap:7px;align-items:center;margin-top:9px;font-size:12px;color:var(--accent2);
+    border:1px solid rgba(94,234,212,.25);background:rgba(94,234,212,.06);border-radius:9px;padding:6px 10px}
+
+  /* sections */
+  section{padding:64px 0;border-top:1px solid rgba(35,42,56,.6)}
+  .head{max-width:720px;margin-bottom:38px}
+  .head p{color:var(--muted);margin:0;font-size:16.5px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;transition:.2s}
+  .card:hover{border-color:#333c50;transform:translateY(-2px)}
+  .card h3{margin-bottom:8px;font-size:16.5px}
+  .card p{margin:0;color:var(--muted);font-size:14.3px;line-height:1.6}
+  .num{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.08em;margin-bottom:10px;display:block}
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chips span{border:1px solid var(--line);background:var(--panel);color:var(--muted);
+    border-radius:999px;padding:8px 14px;font-size:13.5px}
+  .chips span b{color:var(--text);font-weight:600}
+
+  /* demo */
+  .demo-box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;min-height:260px}
+  .demo-q{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px}
+  .demo-q button{background:#10141c;border:1px solid var(--line);color:var(--muted);border-radius:999px;
+    padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit}
+  .demo-q button:hover,.demo-q button.active{border-color:var(--accent);color:var(--text)}
+  .demo-out{font-size:14.4px;line-height:1.6}
+  .demo-out table{width:100%;border-collapse:collapse;font-size:12.8px;margin:8px 0}
+  .demo-out th,.demo-out td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+  .demo-out th{background:#10141c;color:var(--muted)}
+  .demo-out pre{background:#0b0e14;border:1px solid var(--line);border-radius:10px;padding:10px;overflow-x:auto;font-size:12.4px}
+  .note{font-size:12.3px;color:var(--dim);margin-top:12px}
+
+  /* free */
+  .free-grid{display:grid;grid-template-columns:1.12fr .88fr;gap:18px;align-items:start}
+  .free-grid > *{min-width:0}
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+  .free-table{width:100%;border-collapse:collapse;font-size:14.2px;min-width:540px}
+  .free-table th,.free-table td{padding:12px 14px;text-align:left;border-bottom:1px solid rgba(35,42,56,.75)}
+  .free-table tr:last-child td{border-bottom:none}
+  .free-table th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+  .free-table td:nth-child(2){color:var(--muted);font-size:13.4px}
+  .free-table tr:hover td{background:rgba(255,255,255,.02)}
+
+  /* code */
+  pre.code{background:#0a0d13;border:1px solid var(--line);border-radius:14px;padding:16px 18px;
+    overflow-x:auto;font:13.2px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfd8e6;margin:0}
+  pre.code .c{color:#6b7688}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .step h3{font-size:15.5px;margin-bottom:6px}
+  .step .tag{font-size:11.5px;color:var(--accent2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;display:block}
+  .step pre{margin-top:12px;font-size:12.2px;padding:12px}
+
+  /* honest */
+  .honest{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .honest ul{margin:0;padding-left:20px;color:var(--muted);font-size:14.6px}
+  .honest li{margin:7px 0}
+
+  /* faq */
+  details{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:10px}
+  details summary{cursor:pointer;font-weight:600;font-size:15.2px;list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary:after{content:"+";float:right;color:var(--accent);font-weight:700}
+  details[open] summary:after{content:"–"}
+  details p{margin:10px 0 0;color:var(--muted);font-size:14.6px}
+
+  footer{border-top:1px solid var(--line);padding:34px 0 46px;color:var(--dim);font-size:13.4px}
+  footer .wrap{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+  footer .r{margin-left:auto}
+
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr;gap:34px}
+    .free-grid{grid-template-columns:1fr}
+  }
+
+  @media (max-width:640px){
+    .table-scroll{border:none;background:none;overflow:visible;border-radius:0}
+    .free-table{display:block;min-width:0;background:none;font-size:14.4px}
+    .free-table tr{display:block;background:var(--panel);border:1px solid var(--line);
+      border-radius:14px;padding:12px 14px;margin-bottom:10px}
+    .free-table tr:first-child{display:none}
+    .free-table td{display:block;padding:2px 0;border:none;line-height:1.45}
+    .free-table td:nth-child(2){color:var(--muted);font-size:12.8px;margin-top:5px}
+    .free-table td:nth-child(2)::before{content:"ключ: ";color:var(--muted-2,#7b8497)}
+    .free-table td:nth-child(3){color:var(--muted);font-size:12.8px}
+    .free-table td:nth-child(3)::before{content:"лимит: ";color:var(--muted-2,#7b8497)}
+    .free-table tr:hover td{background:none}
+    .grid3,.steps{grid-template-columns:1fr}
+    .honest{grid-template-columns:1fr}
+    nav .links{display:none}
+    header.hero{padding:48px 0 40px}
+  }
+</style>
+
+<link rel="canonical" href="https://bochkooxana2027-oss.github.io/veselovskaya/">
+<meta property="og:url" content="https://bochkooxana2027-oss.github.io/veselovskaya/">
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><div class="mark">В</div> Веселовская</div>
+    <div class="links">
+      <a href="#how">Как работает</a>
+      <a href="#skills">Возможности</a>
+      <a href="#demo">Примеры</a>
+      <a href="#free">Бесплатно</a>
+      <a href="#start">Запуск</a>
+      <a href="#faq">Вопросы</a>
+    </div>
+    <a class="btn ghost sm" href="#start">Скачать</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="kicker"><i></i> Работает офлайн · данные остаются у вас</div>
+      <h1>Ассистент, который сам выбирает <span class="grad">специалиста</span></h1>
+      <p class="lead">Посчитает смету и кредит без ошибок, соберёт контент-план таблицей,
+        сделает лендинг готовым файлом, подготовит промпт для картинки и раскадровку видео.
+        Один запрос обычными словами — дальше она решает, кто возьмётся.</p>
+      <div class="cta">
+        <a class="btn primary" href="#start">Скачать бесплатно</a>
+        <a class="btn ghost" href="#demo">Посмотреть ответы</a>
+      </div>
+      <div class="micro">Один файл · Python 3.9+ · тексты — на бесплатном тарифе</div>
+    </div>
+
+    <div class="chat" aria-hidden="true">
+      <div class="bar"><span class="dot"></span><b>Веселовская</b><span>офлайн-режим</span></div>
+      <div class="bub me">контент-план на неделю для кофейни в телеграме</div>
+      <div class="bub bot">
+        <div class="who">Веселовская · контент</div>
+        <strong>Контент-план: кофейня</strong>
+        <table class="mini">
+          <tr><th>День</th><th>Рубрика</th><th>Время</th></tr>
+          <tr><td>Пн</td><td>Вовлечение</td><td>09:30</td></tr>
+          <tr><td>Вт</td><td>Экспертиза</td><td>19:00</td></tr>
+          <tr><td>Ср</td><td>Продажа</td><td>09:30</td></tr>
+        </table>
+        <span class="file">⬇ content-plan-telegram-7d.csv</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="how">
+  <div class="wrap">
+    <div class="head">
+      <h2>Почему это не «одна нейросеть на всё»</h2>
+      <p>Маленькая модель не умеет одновременно считать, рисовать и писать код — и ошибается там,
+         где нужна точность. Поэтому у каждой задачи свой исполнитель.</p>
+    </div>
+    <div class="grid3">
+      <div class="card">
+        <span class="num">01 · СЧИТАЕТ</span>
+        <h3>Вычислитель, а не языковая модель</h3>
+        <p>Проценты, скидки, НДС, аннуитет, единицы измерения, даты — считает обычный код.
+           Поэтому в смете не бывает «примерно 18 тысяч».</p>
+      </div>
+      <div class="card">
+        <span class="num">02 · СОБИРАЕТ</span>
+        <h3>Алгоритм по правилам</h3>
+        <p>Контент-план, лендинг, структура статьи, чек-лист — раскладываются по схеме:
+           предсказуемо, повторяемо, без «вдохновения».</p>
+      </div>
+      <div class="card">
+        <span class="num">03 · ПИШЕТ</span>
+        <h3>LLM — только для языка</h3>
+        <p>Свободные тексты отдаются модели, которую вы подключите: OpenAI, OpenRouter,
+           DeepSeek или локальная Ollama. Нет ключа — будет честный каркас, а не выдумка.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="wrap">
+    <div class="head">
+      <h2>Одиннадцать специалистов под одной оболочкой</h2>
+      <p>Роутер выбирает нужного за микросекунды по ключевым словам — без обращения к модели,
+         поэтому это бесплатно и не тормозит.</p>
+    </div>
+    <div class="chips">
+      <span><b>Расчёты</b> — сметы, кредиты, проценты</span>
+      <span><b>Тексты</b> — посты, статьи, письма</span>
+      <span><b>Соцсети</b> — контент-план, рубрики</span>
+      <span><b>Оформление</b> — шапка, описание, закреп</span>
+      <span><b>Дизайн</b> — промпты для картинок</span>
+      <span><b>Видео</b> — раскадровка и промпт</span>
+      <span><b>Разработка</b> — лендинги, API, SQL</span>
+      <span><b>Маркетинг</b> — УТП, воронка, бюджет</span>
+      <span><b>Репетитор</b> — объяснения, планы уроков</span>
+      <span><b>Помощник</b> — выжимки, задачи, чек-листы</span>
+      <span><b>Диалог</b> — всё остальное</span>
+    </div>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="wrap">
+    <div class="head">
+      <h2>Что она отвечает</h2>
+      <p>Ниже — сохранённые ответы офлайн-режима. Нажмите на запрос: это демонстрация, настоящая
+         версия отвечает на любые формулировки.</p>
+    </div>
+    <div class="demo-box">
+      <div class="demo-q" id="dq">
+        <button data-k="calc">скидка 30% на 12 500</button>
+        <button data-k="plan">контент-план на неделю для кофейни</button>
+        <button data-k="land">сделай лендинг для студии йоги</button>
+        <button data-k="mkt">рекламная кампания на 50 000 ₽</button>
+      </div>
+      <div class="demo-out" id="dout"></div>
+      <div class="note">Показаны реальные ответы. Полная версия считает по вашим цифрам и сохраняет файлы.</div>
+    </div>
+  </div>
+</section>
+
+<section id="free">
+  <div class="wrap">
+    <div class="head">
+      <h2>Бесплатно — включая тексты</h2>
+      <p>Расчёты, планы и лендинги не требовали денег никогда. Теперь бесплатны и свободные
+         тексты: у провайдеров есть тарифы, где ключ выдают сразу после регистрации,
+         без карты. Ассистент сам находит любой доступный ключ.</p>
+    </div>
+    <div class="free-grid">
+      <div>
+        <div class="table-scroll"><table class="free-table">
+          <tr><th>Провайдер</th><th>Ключ в .env</th><th>Лимит бесплатного тарифа</th></tr>
+          <tr><td><b>OpenRouter</b></td><td><code>OPENROUTER_API_KEY</code></td><td>модели с «:free», ~50 запросов в день</td></tr>
+          <tr><td><b>Groq</b></td><td><code>GROQ_API_KEY</code></td><td>щедрый лимит, ответы за секунды</td></tr>
+          <tr><td><b>Google Gemini</b></td><td><code>GEMINI_API_KEY</code></td><td>бесплатный уровень, лимит в минуту</td></tr>
+          <tr><td><b>Mistral</b></td><td><code>MISTRAL_API_KEY</code></td><td>план Experiment</td></tr>
+          <tr><td><b>Cerebras</b></td><td><code>CEREBRAS_API_KEY</code></td><td>бесплатный уровень, быстрая выдача</td></tr>
+          <tr><td><b>Ollama</b> (локально)</td><td>не нужен</td><td>совсем без лимитов, нужен компьютер</td></tr>
+        </table></div>
+        <p class="note">Порядок подбора: ваша настройка → ключ из окружения → локальная модель →
+           офлайн-каркас. Ничего настраивать не нужно, кроме одной строки с ключом.</p>
+      </div>
+      <div class="step">
+        <span class="tag">2 минуты</span>
+        <h3>Как включить</h3>
+        <p class="muted" style="font-size:14px">Самый простой путь — Groq: регистрация без карты,
+           ключ показывают сразу.</p>
+        <pre class="code"><span class="c"># 1. что доступно и что уже найдено</span>
+python3 -m veselovskaya providers
+
+<span class="c"># 2. ключ в .env — и всё</span>
+echo 'GROQ_API_KEY=gsk_...' >> .env
+
+<span class="c"># 3. проверка</span>
+python3 -m veselovskaya doctor</pre>
+        <p class="micro" style="margin-top:12px">В веб-чате появится «бесплатно: Groq» —
+           если лимит кончился, ассистент честно скажет об этом и отдаст офлайн-результат.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <div class="head">
+      <h2>Запуск за минуту</h2>
+      <p>Четыре способа — от двойного клика до сервера в докере.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="tag">Способ 1 · на компьютер</span>
+        <h3>Двойной клик</h3>
+        <p class="muted" style="font-size:14px">Комплект с установщиком: сам найдёт Python, поставит
+           окружение, откроет чат и положит ярлык на рабочий стол.</p>
+        <pre class="code">Windows:  start-windows.bat
+macOS:    start-macos.command
+Linux:    bash start-linux.sh</pre>
+      </div>
+      <div class="step">
+        <span class="tag">Способ 2 · один файл</span>
+        <h3>Без установки</h3>
+        <p class="muted" style="font-size:14px">Нужен только Python 3.9+. Ни pip, ни интернета.</p>
+        <pre class="code">python3 veselovskaya.pyz chat</pre>
+      </div>
+      <div class="step">
+        <span class="tag">Способ 3 · из терминала</span>
+        <h3>Веб-чат</h3>
+        <p class="muted" style="font-size:14px">Скрипт сам создаст окружение и поставит зависимости.</p>
+        <pre class="code">./install.sh
+./start.sh</pre>
+      </div>
+      <div class="step">
+        <span class="tag">Способ 4 · свой сервер</span>
+        <h3>Docker</h3>
+        <p class="muted" style="font-size:14px">Чат на своём домене, данные не покидают машину.</p>
+        <pre class="code">docker run -p 8000:8000 \
+  --env-file .env veselovskaya</pre>
+      </div>
+    </div>
+    <div style="margin-top:26px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <a class="btn primary" href="veselovskaya-2.2.pyz" download>Скачать veselovskaya.pyz</a>
+      <a class="btn ghost" href="veselovskaya-2.2-kit.zip" download>Установить на компьютер</a>
+      <span class="micro">63 КБ, без зависимостей · комплект: установщик для Windows/macOS/Linux, инструкция, шпаргалка ·
+           <a href="files/" style="color:#a78bfa">все файлы по отдельности</a></span>
+    </div>
+  </div>
+</section>
+
+<section id="honest">
+  <div class="wrap">
+    <div class="head">
+      <h2>Что она не делает</h2>
+      <p>Честные границы — часть продукта, а не мелкий шрифт.</p>
+    </div>
+    <div class="honest">
+      <div class="card">
+        <h3>Не обещает того, чего нет</h3>
+        <ul>
+          <li>Не «своя нейросеть, обученная на ваших текстах» — это оркестратор.</li>
+          <li>Не рендерит видео: собирает раскадровку и промпт для генератора.</li>
+          <li>Без ключа LLM длинные тексты — каркас, и это видно в ответе.</li>
+          <li>Бесплатные тарифы ограничивают частоту: для потока нужен свой ключ.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Держит данные при себе</h3>
+        <ul>
+          <li>Расчёты, планы и лендинги считаются локально.</li>
+          <li>Наружу уходит только то, что вы сами отправите в LLM.</li>
+          <li>Нет аккаунтов, подписок и трекеров.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap" style="max-width:860px">
+    <div class="head"><h2>Вопросы</h2></div>
+    <details open>
+      <summary>Это бесплатно?</summary>
+      <p>Да. Код лежит в комплекте и читается целиком — никаких закрытых частей. Работает
+         без интернета и без ключей. Если нужны свободные тексты — подойдёт любой бесплатный
+         тариф: Groq, Gemini, OpenRouter, Mistral, Cerebras или локальная Ollama. Платить
+         не обязательно; свой платный ключ — только если нужен объём сверх лимитов.</p>
+    </details>
+    <details>
+      <summary>Тексты правда бесплатно?</summary>
+      <p>Да, на бесплатном тарифе провайдера. Регистрируетесь, получаете ключ, кладёте в
+         <code>.env</code> — ассистент сам его находит. Ответ на запрос уходит к провайдеру
+         (так работает любая облачная модель), всё остальное — расчёты, планы, файлы —
+         остаётся у вас. Совсем без отправки данных работает локальная Ollama.</p>
+    </details>
+    <details>
+      <summary>Куда уходят мои данные?</summary>
+      <p>Никуда, пока вы сами не подключите LLM. Расчёты, контент-планы, лендинги и файлы
+         создаются на вашей машине и лежат в папке <code>artifacts/</code>.</p>
+    </details>
+    <details>
+      <summary>Нужен ли мощный компьютер?</summary>
+      <p>Нет. Это набор алгоритмов и обращений к API: хватает любого ноутбука. Локальную модель
+         можно подключить, но она не обязательна.</p>
+    </details>
+    <details>
+      <summary>Можно поставить на свой сервер и открыть по ссылке?</summary>
+      <p>Да: <code>./start.sh</code> или Docker, дальше — домен и HTTPS через Caddy или nginx.
+         Инструкция лежит в архиве в файле DEPLOY.md.</p>
+    </details>
+    <details>
+      <summary>А если ответ не тот специалист?</summary>
+      <p>Укажите вручную: <code>--skill calc</code>, <code>--skill text</code> и так далее.
+         Посмотреть, кому уйдёт запрос, можно командой <code>route</code>.</p>
+    </details>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="logo" style="font-size:14.5px"><div class="mark" style="width:28px;height:28px;border-radius:9px;font-size:14px">В</div> Веселовская 2.2</div>
+    <div class="r">Ассистент, который считает, а не угадывает</div>
+  </div>
+</footer>
+
+<script>
+const ANSWERS = {
+  calc: {
+    skill: 'расчёты',
+    html: `<strong>Скидка 30% на 12 500</strong><br><br>Итоговая цена: <strong>8 750</strong><br>Экономия: 3 750`
+  },
+  plan: {
+    skill: 'соцсети',
+    html: `<strong>Контент-план: кофейня</strong><br><span class="muted">telegram · 7 дней</span>
+      <table><tr><th>День</th><th>Рубрика</th><th>Формат</th><th>Время</th></tr>
+      <tr><td>Пн</td><td>Вовлечение</td><td>вопрос подписчикам</td><td>09:30</td></tr>
+      <tr><td>Вт</td><td>Экспертиза</td><td>кейс с цифрами</td><td>19:00</td></tr>
+      <tr><td>Ср</td><td>Продажа</td><td>оффер с ограничением</td><td>09:30</td></tr>
+      <tr><td>Чт</td><td>Личное</td><td>за кулисами</td><td>19:00</td></tr></table>
+      Файлы: content-plan-telegram-7d.md, .csv`
+  },
+  land: {
+    skill: 'разработка',
+    html: `<strong>Лендинг готов</strong><br><br>Файл: landing-studio.html — открывается в браузере,
+      без сборки и зависимостей.<br><br>Внутри: первый экран, 3 блока выгоды, «как это работает»,
+      тариф, CTA, подвал. Тёмная тема, адаптив под телефон.`
+  },
+  mkt: {
+    skill: 'маркетинг',
+    html: `<strong>Каналы и бюджет (всего 50 000 ₽)</strong>
+      <table><tr><th>Канал</th><th>Доля</th><th>Сумма</th></tr>
+      <tr><td>Платная реклама</td><td>40%</td><td>20 000 ₽</td></tr>
+      <tr><td>Контент и соцсети</td><td>25%</td><td>12 500 ₽</td></tr>
+      <tr><td>Партнёрства</td><td>15%</td><td>7 500 ₽</td></tr>
+      <tr><td>Email и мессенджеры</td><td>10%</td><td>5 000 ₽</td></tr>
+      <tr><td>SEO и сайт</td><td>10%</td><td>5 000 ₽</td></tr></table>
+      CPL: 500 ₽ · CAC: 3 333 ₽`
+  }
+};
+
+const qs = document.querySelectorAll('#dq button');
+const out = document.getElementById('dout');
+
+function show(key){
+  const a = ANSWERS[key];
+  if (!a) return;
+  qs.forEach(b => b.classList.toggle('active', b.dataset.k === key));
+  out.innerHTML = `<div class="bub bot" style="margin:0"><div class="who">Веселовская · ${a.skill}</div>${a.html}</div>`;
+}
+qs.forEach(b => b.addEventListener('click', () => show(b.dataset.k)));
+show('calc');
+
+// плавное появление блоков (без поддержки — просто показываем сразу)
+if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting){ e.target.style.opacity = 1; e.target.style.transform = 'none'; io.unobserve(e.target); }
+  }), {threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('section .card, .step, details').forEach(el => {
+    el.style.opacity = 0; el.style.transform = 'translateY(10px)';
+    el.style.transition = 'opacity .5s ease, transform .5s ease';
+    io.observe(el);
+  });
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Веселовская",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Linux, macOS, Windows",
+  "description": "Ассистент-оркестратор: расчёты идут через вычислитель, контент-планы и лендинги собираются по правилам, языковая модель подключается только для текста.",
+  "inLanguage": "ru",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "RUB"},
+  "url": "https://bochkooxana2027-oss.github.io/veselovskaya/",
+  "image": "https://bochkooxana2027-oss.github.io/veselovskaya/og.png"
+}
+</script>
+</body>
+</html>

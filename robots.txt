@@ -1,0 +1,9 @@
+# Веселовская — статический сайт
+User-agent: *
+Allow: /
+
+# Индексируем страницы, но не тяжёлые загрузки
+Disallow: /*.zip$
+Disallow: /*.pyz$
+
+Sitemap: https://bochkooxana2027-oss.github.io/veselovskaya/sitemap.xml

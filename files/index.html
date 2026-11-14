@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Веселовская 2.2 — файлы для скачивания</title>
+<meta name="description" content="Комплект для установки «Веселовской» на компьютер: установщик для Windows, macOS и Linux, один файл без установки, инструкция.">
+<meta property="og:title" content="Веселовская 2.2 — скачать">
+<meta property="og:description" content="Ассистент для компьютера: установщик в один двойной клик, работает офлайн.">
+<meta property="og:type" content="website">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg:#0b0d12; --panel:#12151d; --line:#222835; --text:#e8eaf0;
+    --muted:#98a2b3; --violet:#a78bfa; --teal:#5eead4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:56px 22px 72px}
+  .logo{display:flex;align-items:center;gap:11px;font-weight:650;letter-spacing:-.01em}
+  .mark{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--violet),var(--teal));color:#0b0d12;font-weight:800;font-size:16px}
+  h1{font-size:clamp(28px,5vw,40px);line-height:1.15;letter-spacing:-.02em;margin:30px 0 12px}
+  .lead{color:var(--muted);font-size:17px;margin:0 0 28px;max-width:60ch}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:13px 20px;border-radius:13px;
+    font-weight:600;text-decoration:none;font-size:15.5px;border:1px solid transparent;transition:.15s}
+  .btn.primary{background:linear-gradient(135deg,var(--violet),var(--teal));color:#0b0d12}
+  .btn.primary:hover{filter:brightness(1.07)}
+  .btn.ghost{border-color:var(--line);color:var(--text);background:var(--panel)}
+  .btn.ghost:hover{border-color:#33405a}
+  .micro{color:var(--muted);font-size:13.5px}
+  h2{font-size:19px;letter-spacing:-.01em;margin:44px 0 14px}
+  .list{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel)}
+  .row{display:grid;grid-template-columns:1fr auto;gap:2px 16px;padding:14px 18px;
+    text-decoration:none;color:inherit;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row:hover{background:#161a24}
+  .fname{font-weight:600;font-size:14.6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .fnote{grid-column:1;color:var(--muted);font-size:13.4px;font-family:inherit}
+  .fsize{grid-column:2;grid-row:1 / span 2;align-self:center;color:var(--muted);font-size:13px;white-space:nowrap}
+  ol{padding-left:22px;color:var(--muted);margin:0}
+  ol li{margin-bottom:8px}
+  ol b{color:var(--text)}
+  code{background:#171b25;border:1px solid var(--line);border-radius:7px;padding:2px 7px;
+    font-size:13.4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .note{margin-top:30px;padding:16px 18px;border:1px solid var(--line);border-radius:14px;
+    background:var(--panel);color:var(--muted);font-size:14.2px}
+  footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13.6px}
+  footer a{color:var(--violet);text-decoration:none}
+  @media (max-width:560px){
+    .wrap{padding:36px 16px 56px}
+    .row{grid-template-columns:1fr;gap:2px}
+    .fsize{grid-column:1;grid-row:auto}
+    .btn{flex:1 1 100%;justify-content:center}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="logo"><div class="mark">В</div> Веселовская 2.2</div>
+
+  <h1>Скачать и поставить на компьютер</h1>
+  <p class="lead">Один архив: установщик для Windows, macOS и Linux, файл без установки
+     и инструкция. Расчёты, контент-планы, лендинги и промпты работают офлайн, без ключей.</p>
+
+  <div class="cta">
+    <a class="btn primary" href="../veselovskaya-2.2-kit.zip" download>Скачать комплект · 81 КБ</a>
+    <a class="btn ghost" href="veselovskaya.pyz" download>Только veselovskaya.pyz</a>
+  </div>
+  <p class="micro">Нужен Python 3.10 или новее. Первый запуск скачивает две библиотеки (около 30 МБ),
+     дальше — сразу.</p>
+
+  <h2>Все файлы по отдельности</h2>
+  <div class="list">
+      <a class="row" href="veselovskaya.pyz">
+        <span class="fname">veselovskaya.pyz</span>
+        <span class="fnote">Сам ассистент — весь код в одном файле, запускается любым Python 3.10+</span>
+        <span class="fsize">63 КБ</span>
+      </a>
+      <a class="row" href="start-windows.bat">
+        <span class="fname">start-windows.bat</span>
+        <span class="fnote">Запуск · Windows — двойной клик: окружение, зависимости, браузер, ярлык</span>
+        <span class="fsize">2 КБ</span>
+      </a>
+      <a class="row" href="start-macos.command">
+        <span class="fname">start-macos.command</span>
+        <span class="fnote">Запуск · macOS — двойной клик или bash start-macos.command</span>
+        <span class="fsize">219 Б</span>
+      </a>
+      <a class="row" href="start-linux.sh">
+        <span class="fname">start-linux.sh</span>
+        <span class="fnote">Запуск · Linux — bash start-linux.sh, пункт появится в меню</span>
+        <span class="fsize">2 КБ</span>
+      </a>
+      <a class="row" href="%D0%A3%D0%A1%D0%A2%D0%90%D0%9D%D0%9E%D0%92%D0%9A%D0%90.md">
+        <span class="fname">УСТАНОВКА.md</span>
+        <span class="fnote">Инструкция — пошагово для трёх систем, обновление, разбор сбоев</span>
+        <span class="fsize">7 КБ</span>
+      </a>
+      <a class="row" href="%D0%9F%D0%90%D0%9C%D0%AF%D0%A2%D0%9A%D0%90.md">
+        <span class="fname">ПАМЯТКА.md</span>
+        <span class="fnote">Шпаргалка — что писать, чтобы получить нужный результат</span>
+        <span class="fsize">6 КБ</span>
+      </a>
+      <a class="row" href="README.md">
+        <span class="fname">README.md</span>
+        <span class="fnote">Описание — возможности, навыки, настройки, бесплатные LLM</span>
+        <span class="fsize">19 КБ</span>
+      </a>
+      <a class="row" href="CHANGELOG.md">
+        <span class="fname">CHANGELOG.md</span>
+        <span class="fnote">История версий — что менялось от 1.0 до 2.2</span>
+        <span class="fsize">5 КБ</span>
+      </a>
+      <a class="row" href="env.example">
+        <span class="fname">.env.example</span>
+        <span class="fnote">Настройки — шаблон настроек: скопируйте в .env и впишите ключи</span>
+        <span class="fsize">2 КБ</span>
+      </a>
+  </div>
+
+  <h2>Как поставить</h2>
+  <ol>
+    <li>Скачайте комплект и распакуйте в любую папку.</li>
+    <li><b>Windows:</b> двойной клик по <code>start-windows.bat</code>.
+        <b>macOS:</b> двойной клик по <code>start-macos.command</code> (или <code>bash start-macos.command</code>).
+        <b>Linux:</b> <code>bash start-linux.sh</code>.</li>
+    <li>Первый запуск: скрипт сам найдёт Python, соберёт окружение и напишет, что делает.</li>
+    <li>Браузер откроется на <code>http://127.0.0.1:8000</code> — это и есть ассистент.
+        Окно консоли закрывать нельзя, в нём он работает.</li>
+  </ol>
+
+  <div class="note">
+    Свободные тексты (письма, статьи) делает языковая модель. Бесплатные варианты —
+    OpenRouter, Groq, Gemini, Mistral, Cerebras или локальная Ollama; ключ не обязателен,
+    без него ассистент честно работает в офлайн-режиме. Подробности — в README.
+  </div>
+
+  <footer>
+    Веселовская 2.2 · <a href="../">основной сайт</a> ·
+    <a href="УСТАНОВКА.md">инструкция по установке</a>
+  </footer>
+
+</div>
+</body>
+</html>
