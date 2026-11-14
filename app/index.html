@@ -214,7 +214,7 @@ form.composer #micBtn.rec{color:#0b0d12;background:var(--teal);border-color:tran
   <div class="panel on" id="p-img">
     <h2>Картинка по описанию</h2>
     <p class="pnote">Пишите по-русски, как объяснили бы художнику: что, где, какой свет и настроение.
-      Бесплатно сервис даёт <b>одну картинку примерно в 45 секунд</b> — если лимит исчерпан, подожду и повторю сама.</p>
+      Кадр обычно готов за <b>5–20 секунд</b>: приложение само выбирает движок, а если один занят — пробует следующий.</p>
     <textarea id="imgp" placeholder="например: уютная кофейня утром, тёплый свет, дерево и медь, человек за стойкой"></textarea>
     <div class="pgrid">
       <select id="imgsz" aria-label="Размер">
@@ -273,7 +273,7 @@ form.composer #micBtn.rec{color:#0b0d12;background:var(--teal);border-color:tran
   <div class="panel" id="p-design">
     <h2>Дизайн: логотип, обложка, макет</h2>
     <p class="pnote">Опишите задачу и для кого она. Я нарисую вариант и вытащу из него палитру — с готовыми CSS-переменными.
-      <b>Одна генерация примерно в 45 секунд.</b></p>
+      <b>Обычно 5–20 секунд.</b></p>
     <textarea id="dsp" placeholder="например: знак для кофейни «Тёплый угол», тёплые цвета, для вывески и аватарки"></textarea>
     <div class="pgrid">
       <select id="dst" aria-label="Тип дизайна">
@@ -435,7 +435,7 @@ form.composer #micBtn.rec{color:#0b0d12;background:var(--teal);border-color:tran
   <div class="hint">
     <span>Enter — отправить, Shift+Enter — новая строка</span>
     <span>История хранится только в этом браузере</span>
-    <span>Картинка — примерно раз в 45 секунд</span>
+    <span>Картинка — обычно 5–20 секунд</span>
     <span>Голос и звуки — на вашем устройстве</span>
     <button class="btn sm" id="clear" type="button">очистить историю</button>
   </div>
@@ -1102,8 +1102,17 @@ function callModel(messages,opts){
   if(key) headers["Authorization"]="Bearer "+key;
   if(p==="openrouter"){ headers["HTTP-Referer"]=location.origin; headers["X-Title"]="Veselovskaya web"; }
   var url=/\/chat\/completions$/.test(base)?base:base+"/chat/completions";
-  return fetch(url,{method:"POST",headers:headers,
-      body:JSON.stringify({model:mdl,messages:messages,temperature:TP,max_tokens:MT})})
+  var ac=("AbortController" in window)?new AbortController():null;
+  var tm=setTimeout(function(){ try{ if(ac) ac.abort(); }catch(e){} },75000);
+  var init={method:"POST",headers:headers,
+      body:JSON.stringify({model:mdl,messages:messages,temperature:TP,max_tokens:MT})};
+  if(ac) init.signal=ac.signal;
+  return fetch(url,init).then(function(r){ clearTimeout(tm); return r; },function(e){
+      clearTimeout(tm);
+      if(e&&(e.name==="AbortError"||String(e).indexOf("abort")>=0))
+        throw new Error("Сервер не ответил за 75 секунд — повторите, обычно со второго раза выходит.");
+      throw e;
+    })
     .then(readJson).then(function(j){
       var m=j.choices&&j.choices[0]&&j.choices[0].message;
       if(!m) throw new Error(friendly(j));
@@ -1939,18 +1948,29 @@ function runSite(preset){
     {role:"user",content:"Сайт: "+d+"\nСтиль: "+tone
       +"\nБлоки: первый экран с заголовком и кнопкой, 3 преимущества, услуги или товары с ценами, отзывы, форма заявки, футер с контактами."}
   ];
-  textCall(msgs,{maxTokens:4000,temperature:.7},function(t){ stat.textContent=t; })
-    .then(function(txt){
-      var html=stripFences(txt);
-      if(!/<html/i.test(html)||html.length<200) throw new Error("модель вернула не страницу — попробуйте ещё раз");
-      SITE.html=html;
-      fr.srcdoc=html; fr.style.display="block";
-      el("stctrl").style.display="flex";
-      el("stcodebox").textContent=html;
-      el("stcodebox").classList.remove("on");
-      el("stcode").textContent="показать код";
-      stat.textContent="готово · "+Math.round(html.length/1024)+" КБ";
-    }).catch(function(e){
+  var tries=0;
+  function attempt(){
+    return textCall(msgs,{maxTokens:4000,temperature:.7},function(t){ stat.textContent=t; })
+      .then(function(txt){
+        var html=stripFences(txt);
+        if(!/<html/i.test(html)||html.length<200) throw new Error("модель вернула не страницу — попробуйте ещё раз");
+        SITE.html=html;
+        fr.srcdoc=html; fr.style.display="block";
+        el("stctrl").style.display="flex";
+        el("stcodebox").textContent=html;
+        el("stcodebox").classList.remove("on");
+        el("stcode").textContent="показать код";
+        stat.textContent="готово · "+Math.round(html.length/1024)+" КБ";
+      }).catch(function(e){
+        var msg=String(e&&e.message||e);
+        if(tries++<1&&/не ответил|abort|402|limit|429|rate|пустой/i.test(msg)){
+          stat.textContent="не вышло с первого раза — пробую снова…";
+          return new Promise(function(r){ setTimeout(r,Math.min(rateWait(msg)+3,50)*1000); }).then(attempt);
+        }
+        throw e;
+      });
+  }
+  attempt().catch(function(e){
       stat.className="pstat err";
       stat.textContent="не получилось: "+String(e&&e.message||e).slice(0,180);
     }).then(function(){ btn.disabled=false; });
