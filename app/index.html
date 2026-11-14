@@ -146,6 +146,7 @@ footer a:hover{color:var(--teal)}
 .bar{display:none;height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin:2px 0 10px}
 .bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#a78bfa,#5eead4);transition:width .4s ease}
 .pstat.err{color:#ff9b9b}
+.pstat.diag{display:block;line-height:1.55;max-width:640px}
 .shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin:6px 0 12px}
 .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1119}
 .shot img{display:block;width:100%;height:auto}
@@ -260,12 +261,13 @@ form.composer #micBtn.rec{color:#0b0d12;background:var(--teal);border-color:tran
       </select>
     </div>
     <div class="prow"><button class="btn primary" type="button" id="ctgo">Собрать мультфильм</button>
+      <button class="btn" type="button" id="ctdiag">что мешает</button>
       <span class="pstat" id="ctstat"></span></div>
     <div class="bar" id="ctbar" role="progressbar" aria-label="Готовность кадров"><i></i></div>
     <div class="player" id="ctplayer" style="display:none"><canvas id="ctcv" width="1024" height="576"></canvas></div>
     <div class="prow" id="ctctrl" style="display:none">
       <button class="btn" type="button" id="ctplay">проиграть</button>
-      <button class="btn" type="button" id="ctwebm">скачать видео (WebM)</button>
+      <button class="btn" type="button" id="ctwebm">скачать видео</button>
       <span class="pstat" id="ctvstat"></span>
     </div>
     <div class="shots" id="ctout"></div>
@@ -1495,42 +1497,82 @@ function drawCover(ctx,img,W,H){
   ctx.drawImage(img,(W-w)/2,(H-h)/2,w,h);
 }
 
+function recSupport(){
+  var cv=document.createElement("canvas");
+  if(!("MediaRecorder" in window)) return "";
+  if(typeof cv.captureStream!=="function") return "";
+  var types=["video/mp4;codecs=avc1","video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"];
+  for(var i=0;i<types.length;i++){
+    try{ if(MediaRecorder.isTypeSupported(types[i])) return types[i]; }catch(e){}
+  }
+  return "any";
+}
 function recordFrames(urls,secPer,W,H,onProgress){
   return new Promise(function(res,rej){
-    if(!("MediaRecorder" in window)) return rej(new Error("этот браузер не умеет записывать видео"));
+    var mt=recSupport();
+    if(!mt) return rej(new Error("этот браузер не умеет собирать видео из кадров. "
+      +"Кадры можно скачать по одному, а видео собрать в Chrome или Edge на компьютере."));
     var cv=document.createElement("canvas"); cv.width=W; cv.height=H;
     var ctx=cv.getContext("2d");
-    var imgs=[], loaded=0;
-    function fail(){ rej(new Error("кадры не загрузились")); }
+    var imgs=[], loaded=0, bad=0, timers=[];
 
     function start(){
-      var stream=cv.captureStream(25);
-      var types=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"];
-      var mt="";
-      for(var i=0;i<types.length;i++){ if(MediaRecorder.isTypeSupported(types[i])){ mt=types[i]; break; } }
-      var rec=new MediaRecorder(stream, mt?{mimeType:mt,videoBitsPerSecond:4000000}:undefined);
-      var chunks=[];
+      var stream;
+      try{ stream=cv.captureStream(30); }
+      catch(e){ return rej(new Error("браузер не дал захватить холст для записи.")); }
+      var rec=null;
+      try{ rec=new MediaRecorder(stream, mt==="any"?undefined:{mimeType:mt,videoBitsPerSecond:4000000}); }
+      catch(e){
+        try{ rec=new MediaRecorder(stream); }catch(e2){
+          return rej(new Error("браузер не смог начать запись видео ("+(e2&&e2.name||"ошибка")+")."));
+        }
+      }
+      var chunks=[], settled=false;
+      function finish(blob,err){
+        if(settled) return;
+        settled=true;
+        timers.forEach(clearTimeout);
+        try{ stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+        if(err||!blob||!blob.size) rej(err||new Error("запись вышла пустой — попробуйте ещё раз"));
+        else res(blob);
+      }
       rec.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
-      rec.onstop=function(){ res(new Blob(chunks,{type:mt||"video/webm"})); };
+      rec.onstop=function(){ finish(new Blob(chunks,{type:(rec.mimeType||mt||"video/webm")})); };
+      rec.onerror=function(e){ finish(null,new Error("ошибка записи: "+((e&&e.error&&e.error.name)||"unknown"))); };
       var total=imgs.length*secPer, last=-1;
       ctx.fillStyle="#0b0d12"; ctx.fillRect(0,0,W,H);
       drawCover(ctx,imgs[0],W,H);
-      rec.start();
+      try{ rec.start(200); }catch(e){ return finish(null,new Error("запись не стартовала: "+(e&&e.message||""))); }
+      // страховка: если запись не остановилась сама — будим
+      timers.push(setTimeout(function(){ try{ rec.requestData(); }catch(e){} }, Math.max(4000,total*1000*0.6)));
+      timers.push(setTimeout(function(){ try{ rec.stop(); }catch(e){} }, (total+20)*1000));
       var t0=performance.now();
       (function tick(){
+        if(settled) return;
         var t=(performance.now()-t0)/1000;
-        if(t>=total){ rec.stop(); return; }
+        if(t>=total){ try{ rec.stop(); }catch(e){} return; }
         var idx=Math.min(imgs.length-1,Math.floor(t/secPer));
         if(idx!==last){ last=idx; ctx.fillStyle="#0b0d12"; ctx.fillRect(0,0,W,H); drawCover(ctx,imgs[idx],W,H); }
         if(onProgress) onProgress(Math.min(t,total),total);
-        requestAnimationFrame(tick);
+        // таймер, а не requestAnimationFrame: в фоновой вкладке rAF замирает и видео
+        // получается обрезанным. Таймер идёт всегда, поэтому запись всегда доходит до конца.
+        timers.push(setTimeout(tick, 33));
       })();
     }
 
     urls.forEach(function(u,i){
       var im=new Image();
-      im.onload=function(){ imgs[i]=im; loaded++; if(loaded===urls.length) start(); };
-      im.onerror=fail;
+      im.onload=function(){
+        imgs[i]=im; loaded++;
+        if(loaded===urls.length) start();
+      };
+      im.onerror=function(){
+        bad++; loaded++;
+        if(loaded===urls.length){
+          if(bad) rej(new Error("не загрузились кадры ("+bad+" из "+urls.length+"). Нажмите «продолжить» или соберите кадры заново."));
+          else start();
+        }
+      };
       im.src=u;
     });
   });
@@ -1629,6 +1671,37 @@ function ctDraw(){
     });
   })();
 }
+function ctPlainScenes(idea,n,style){
+  var sc=[];
+  for(var i=0;i<n;i++){
+    sc.push({caption:"Кадр "+(i+1),prompt:idea+", scene "+(i+1)+" of "+n+", same character throughout, "+style});
+  }
+  return sc;
+}
+el("ctdiag").addEventListener("click",function(){
+  var stat=el("ctstat"), btn=this, lines=[];
+  if(CT.busy){ stat.className="pstat"; stat.textContent="идёт рисование — проверю после"; return; }
+  btn.disabled=true; stat.className="pstat diag";
+  function show(){ stat.innerHTML=lines.join("<br>"); }
+  lines.push("проверяю текстовую модель…"); show();
+  textCall([{role:"user",content:"Ответь одним словом: связь"}],{maxTokens:16},null)
+    .then(function(){ lines[0]="✓ текстовая модель отвечает"; },
+      function(e){ lines[0]="✗ текстовая модель: "+esc(String(e&&e.message||e)).slice(0,130)+" — подключите свой ключ в настройках"; })
+    .then(function(){
+      lines.push("проверяю сервис картинок…"); show();
+      return genImage("flat color test composition",512,288,null,{deadline:150000}).then(
+        function(r){ lines.push("✓ картинки рисуются ("+Math.round(r.blob.size/1024)+" КБ)"); },
+        function(e){ lines.push("✗ картинки: "+esc(String(e&&e.message||e)).slice(0,140)); });
+    })
+    .then(function(){
+      var mt=recSupport();
+      if(mt) lines.push("✓ сборка видео поддерживается ("+String(mt).replace("video/","").split(";")[0]+")");
+      else lines.push("✗ сборка видео в этом браузере не поддерживается: кадры скачиваются по одному, видео соберётся в Chrome или Edge");
+      lines.push("Дальше уже понятно, какое звено сбоит. Пришлите этот список — подскажу точнее.");
+      show(); btn.disabled=false;
+    });
+});
+
 function runCartoon(preset,resume){
   var stat=el("ctstat"), btn=el("ctgo");
   if(CT.busy){ stat.className="pstat"; stat.textContent="уже рисую кадры — подождите, пожалуйста"; return; }
@@ -1654,21 +1727,17 @@ function runCartoon(preset,resume){
     .then(function(txt){
       var sc=parseScenes(txt,n);
       if(!sc.length){
-        sc=[];
-        for(var i=0;i<n;i++){
-          sc.push({caption:"Кадр "+(i+1),prompt:idea+", scene "+(i+1)+" of "+n+", same character throughout, "+style});
-        }
         stat.textContent="раскадровку не разобрала — рисую кадры по идее напрямую";
+        sc=ctPlainScenes(idea,n,style);
       }
       CT.plan={scenes:sc,style:style,idea:idea,n:n};
       CT.next=0;
       ctDraw();
-    })
-    .catch(function(e){
-      CT.busy=false; btn.disabled=false; ctBar(0,0);
-      stat.className="pstat err";
-      stat.textContent="раскадровка не получилась: "+String(e&&e.message||e).slice(0,200)
-        +" — нажмите «Собрать мультфильм» ещё раз через минуту.";
+    },function(e){
+      stat.textContent="историю придумать не вышло ("+String(e&&e.message||e).slice(0,90)+") — рисую по вашей идее напрямую";
+      CT.plan={scenes:ctPlainScenes(idea,n,style),style:style,idea:idea,n:n};
+      CT.next=0;
+      ctDraw();
     });
 }
 
@@ -1682,8 +1751,9 @@ el("ctwebm").addEventListener("click",function(){
     st.textContent="пишу видео… "+Math.round(t)+" из "+Math.round(total)+" с";
   }).then(function(blob){
     var url=URL.createObjectURL(blob);
-    st.textContent="видео готово · "+Math.round(blob.size/1024)+" КБ";
-    dl(url,"multfilm-"+stamp()+".webm");
+    var ext=/mp4/.test(blob.type)?"mp4":(/quicktime/.test(blob.type)?"mov":"webm");
+    st.textContent="видео готово · "+Math.round(blob.size/1024)+" КБ · "+ext.toUpperCase();
+    dl(url,"multfilm-"+stamp()+"."+ext);
   }).catch(function(e){
     st.textContent="не вышло: "+String(e&&e.message||e).slice(0,120);
   }).then(function(){ btn.disabled=false; });
@@ -1858,8 +1928,9 @@ el("vdgo").addEventListener("click",function(){
     v.controls=true; v.src=url; v.style.width="100%"; v.style.display="block";
     var host=el("vdplayer"); host.innerHTML=""; host.appendChild(v);
     el("vdctrl").style.display="flex";
-    el("vddl").onclick=function(){ dl(url,"video-"+stamp()+".webm"); };
-    stat.textContent="готово · "+Math.round(blob.size/1024)+" КБ · "+W+"×"+H;
+    var ext=/mp4/.test(blob.type)?"mp4":(/quicktime/.test(blob.type)?"mov":"webm");
+    el("vddl").onclick=function(){ dl(url,"video-"+stamp()+"."+ext); };
+    stat.textContent="готово · "+Math.round(blob.size/1024)+" КБ · "+W+"×"+H+" · "+ext.toUpperCase();
   }).catch(function(e){
     stat.className="pstat err";
     stat.textContent="не вышло: "+String(e&&e.message||e).slice(0,140);
@@ -2299,7 +2370,7 @@ window.VSound={speak:speak,stop:stopSpeak,sfx:playSfx,melody:renderMelody,play:p
 <script>
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load",function(){
-    navigator.serviceWorker.register("sw.js?v=6").catch(function(){});
+    navigator.serviceWorker.register("sw.js?v=7").catch(function(){});
   });
 }
 </script>

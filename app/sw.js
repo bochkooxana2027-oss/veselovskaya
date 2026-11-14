@@ -1,4 +1,4 @@
-var C = "veselovskaya-web-v6";
+var C = "veselovskaya-web-v7";
 var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./favicon.svg"];
 self.addEventListener("install", function(e){
   e.waitUntil(caches.open(C).then(function(c){ return c.addAll(SHELL); }).then(function(){ return self.skipWaiting(); }));
